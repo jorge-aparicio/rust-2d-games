@@ -1,7 +1,7 @@
 [package]
-name = "2d-engine"
+name = "engine2d"
 version = "0.1.0"
-authors = ["Jorge Aparicio <jorge.aparicio.pomona.edu>"]
+authors = ["Jorge Aparicio <jorge.aparicio.pomona.edu>, Cynthia Li, Danny Lee"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
