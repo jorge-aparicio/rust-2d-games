@@ -63,7 +63,7 @@ fn main() {
                 },
             ),
         ],
-        frequency_values: Vec::new(),
+        frequency_values: vec![1,3],
     };
     let mut obstacles = Vec::new();
     let window = {
