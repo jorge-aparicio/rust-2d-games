@@ -6,7 +6,11 @@ use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper;
 
-use std::time::Instant;
+use rodio::Source;
+use std::fs::File;
+use std::io::BufReader;
+
+use std::time::{Duration, Instant};
 
 const DT: f64 = 1.0 / 60.0;
 const DEPTH: usize = 4;
@@ -30,6 +34,27 @@ fn clear(fb: &mut [u8], c: Color) {
 }
 
 fn main() {
+    let (stream, stream_handle) = rodio::OutputStream::try_default().unwrap();
+
+    let file1 = File::open("bensound-energy.mp3").unwrap();
+    //let file2 = File::open("pigeonCoo.mp3").unwrap();
+    //let file3 = File::open("backgroundNoise.mp3").unwrap();
+    let source1 = rodio::Decoder::new(BufReader::new(file1)).unwrap();
+    //let source2 = rodio::Decoder::new(BufReader::new(file2)).unwrap();
+    //let source3 = rodio::Decoder::new(BufReader::new(file3)).unwrap();
+
+    let source1 = source1
+        .take_duration(Duration::from_secs(5))
+        .repeat_infinite();
+    //let _source2 = source2
+       // .take_duration(Duration::from_secs(45))
+        //.repeat_infinite();
+    //let _source3 = source3
+        //.take_duration(Duration::from_secs(180))
+        //.repeat_infinite();
+
+    stream_handle.play_raw(source1.convert_samples());
+
     let event_loop = EventLoop::new();
     let mut input = WinitInputHelper::new();
     let mut player = Rect {
@@ -63,7 +88,7 @@ fn main() {
                 },
             ),
         ],
-        frequency_values: vec![1,3],
+        frequency_values: vec![1, 3],
     };
     let mut obstacles = Vec::new();
     let window = {
@@ -93,44 +118,34 @@ fn main() {
     let mut available_time = 0.0;
     let mut since = Instant::now();
 
-    music::music();
 
     event_loop.run(move |event, _, control_flow| {
+        // music::music();
         // Draw the current frame
         if let Event::RedrawRequested(_) = event {
             let fb = pixels.get_frame();
             clear(fb, [0, 0, 0, 255]);
             obstacles.push(generate.generate_obstacles());
 
-            filled_rect(fb,
+            filled_rect(
+                fb,
                 (player.pos.x.trunc() as i32, player.pos.y.trunc() as i32),
                 (player.size.x.trunc() as i32, player.size.y.trunc() as i32),
-                colors[5]);
-            
+                colors[5],
+            );
+
             // draw obstacles
-            for (top,bottom)  in obstacles.iter() {
+            for (top, bottom) in obstacles.iter() {
                 filled_rect(
                     fb,
-                    (
-                        top.pos.x.trunc() as i32,
-                        top.pos.y.trunc() as i32,
-                    ),
-                    (
-                        top.size.x.trunc() as i32,
-                        top.size.y.trunc() as i32,
-                    ),
+                    (top.pos.x.trunc() as i32, top.pos.y.trunc() as i32),
+                    (top.size.x.trunc() as i32, top.size.y.trunc() as i32),
                     colors[0],
                 );
                 filled_rect(
                     fb,
-                    (
-                        bottom.pos.x.trunc() as i32,
-                        bottom.pos.y.trunc() as i32,
-                    ),
-                    (
-                        bottom.size.x.trunc() as i32,
-                        bottom.size.y.trunc() as i32,
-                    ),
+                    (bottom.pos.x.trunc() as i32, bottom.pos.y.trunc() as i32),
+                    (bottom.size.x.trunc() as i32, bottom.size.y.trunc() as i32),
                     colors[0],
                 );
             }
@@ -159,13 +174,12 @@ fn main() {
         while available_time >= DT {
             available_time -= DT;
             // move all obstacles
-            for (top,bottom)  in obstacles.iter_mut() {
+            for (top, bottom) in obstacles.iter_mut() {
                 top.pos.x += top.vel.x;
                 top.pos.y += top.vel.y;
 
                 bottom.pos.x += bottom.vel.x;
                 bottom.pos.y += bottom.vel.y;
-                
             }
         }
         since = Instant::now();
