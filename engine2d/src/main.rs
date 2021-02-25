@@ -17,7 +17,7 @@ const HEIGHT: usize = 360;
 
 mod collision;
 mod generation;
-//mod music;
+mod music;
 mod objects;
 
 // pixels gives us an rgba8888 framebuffer
@@ -93,6 +93,8 @@ fn main() {
     let mut available_time = 0.0;
     let mut since = Instant::now();
 
+    music::music();
+
     event_loop.run(move |event, _, control_flow| {
         // Draw the current frame
         if let Event::RedrawRequested(_) = event {
@@ -165,7 +167,8 @@ fn main() {
                 bottom.pos.y += bottom.vel.y;
                 
             }
-            window.request_redraw();
         }
+        since = Instant::now();
+        window.request_redraw();
     });
 }
