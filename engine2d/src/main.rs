@@ -21,7 +21,6 @@ const HEIGHT: usize = 360;
 
 mod collision;
 mod generation;
-mod music;
 mod objects;
 
 // pixels gives us an rgba8888 framebuffer
@@ -36,61 +35,64 @@ fn clear(fb: &mut [u8], c: Color) {
 fn main() {
     let (stream, stream_handle) = rodio::OutputStream::try_default().unwrap();
 
-    let file1 = File::open("bensound-energy.mp3").unwrap();
-    //let file2 = File::open("pigeonCoo.mp3").unwrap();
-    //let file3 = File::open("backgroundNoise.mp3").unwrap();
+    let file1 = File::open("birdcoo.mp3").unwrap();
+    let file2 = File::open("birdflap.mp3").unwrap();
+    let file3 = File::open("city-quiet.mp3").unwrap();
     let source1 = rodio::Decoder::new(BufReader::new(file1)).unwrap();
-    //let source2 = rodio::Decoder::new(BufReader::new(file2)).unwrap();
-    //let source3 = rodio::Decoder::new(BufReader::new(file3)).unwrap();
+    let source2 = rodio::Decoder::new(BufReader::new(file2)).unwrap();
+    let source3 = rodio::Decoder::new(BufReader::new(file3)).unwrap();
 
-    let source1 = source1
-        .take_duration(Duration::from_secs(5))
+    let _source1 = source1
+        .take_duration(Duration::from_secs(9))
         .repeat_infinite();
-    //let _source2 = source2
-       // .take_duration(Duration::from_secs(45))
-        //.repeat_infinite();
-    //let _source3 = source3
-        //.take_duration(Duration::from_secs(180))
-        //.repeat_infinite();
+    let _source2 = source2
+        .take_duration(Duration::from_secs(4))
+        .repeat_infinite();
+    let _source3 = source3
+        .take_duration(Duration::from_secs(31))
+        .repeat_infinite();
 
-    stream_handle.play_raw(source1.convert_samples());
+    stream_handle.play_raw(_source1.convert_samples());
+    stream_handle.play_raw(_source2.convert_samples());
+    stream_handle.play_raw(_source3.convert_samples());
 
     let event_loop = EventLoop::new();
     let mut input = WinitInputHelper::new();
-    let mut player = Rect {
+    let mut player = MovingRect {
         pos: Vec2::new(30.0, HEIGHT as f32 / 2.0 - 10.0), // idk what this looks like
         size: Vec2::new(20.0, 20.0),
+        vel: Vec2::new(0.0, 0.0),
     };
     let mut generate = generation::Obstacles {
         obstacles: vec![
             (
                 MovingRect {
-                    pos: Vec2::new(50.0, 0.0),
-                    vel: Vec2::new(0.02, 0.0),
-                    size: Vec2::new(80.0, 80.0),
+                    pos: Vec2::new(220.0, 0.0),
+                    vel: Vec2::new(0.2, 0.0),
+                    size: Vec2::new(20.0, 80.0),
                 },
                 MovingRect {
-                    pos: Vec2::new(50.0, HEIGHT as f32 - 80.0),
-                    vel: Vec2::new(0.02, 0.0),
-                    size: Vec2::new(80.0, 80.0),
+                    pos: Vec2::new(220.0, HEIGHT as f32 - 80.0),
+                    vel: Vec2::new(0.2, 0.0),
+                    size: Vec2::new(20.0, 80.0),
                 },
             ),
             (
                 MovingRect {
-                    pos: Vec2::new(50.0, 0.0),
-                    vel: Vec2::new(0.02, 0.0),
-                    size: Vec2::new(80.0, 80.0),
+                    pos: Vec2::new(220.0, 0.0),
+                    vel: Vec2::new(0.2, 0.0),
+                    size: Vec2::new(20.0, 100.0),
                 },
                 MovingRect {
-                    pos: Vec2::new(100.0, HEIGHT as f32 - 80.0),
-                    vel: Vec2::new(0.02, 0.0),
-                    size: Vec2::new(60.0, 40.0),
+                    pos: Vec2::new(220.0, HEIGHT as f32 - 80.0),
+                    vel: Vec2::new(0.2, 0.0),
+                    size: Vec2::new(20.0, 60.0),
                 },
             ),
         ],
         frequency_values: vec![1, 3],
     };
-    let mut obstacles = Vec::new();
+    let mut obstacles: Vec<MovingRect> = Vec::new();
     let window = {
         let size = LogicalSize::new(WIDTH as f64, HEIGHT as f64);
         WindowBuilder::new()
@@ -114,18 +116,15 @@ fn main() {
         [0, 0, 255, 255],
         [255, 0, 255, 255],
     ];
-    let start = Instant::now();
+    let mut last_added_rect = Instant::now();
     let mut available_time = 0.0;
     let mut since = Instant::now();
 
-
     event_loop.run(move |event, _, control_flow| {
-        // music::music();
         // Draw the current frame
         if let Event::RedrawRequested(_) = event {
             let fb = pixels.get_frame();
             clear(fb, [0, 0, 0, 255]);
-            obstacles.push(generate.generate_obstacles());
 
             filled_rect(
                 fb,
@@ -135,17 +134,12 @@ fn main() {
             );
 
             // draw obstacles
-            for (top, bottom) in obstacles.iter() {
+            
+            for obstacle in obstacles.iter() {
                 filled_rect(
                     fb,
-                    (top.pos.x.trunc() as i32, top.pos.y.trunc() as i32),
-                    (top.size.x.trunc() as i32, top.size.y.trunc() as i32),
-                    colors[0],
-                );
-                filled_rect(
-                    fb,
-                    (bottom.pos.x.trunc() as i32, bottom.pos.y.trunc() as i32),
-                    (bottom.size.x.trunc() as i32, bottom.size.y.trunc() as i32),
+                    (obstacle.pos.x.trunc() as i32, obstacle.pos.y.trunc() as i32),
+                    (obstacle.size.x.trunc() as i32, obstacle.size.y.trunc() as i32),
                     colors[0],
                 );
             }
@@ -172,16 +166,44 @@ fn main() {
         }
 
         while available_time >= DT {
-            available_time -= DT;
-            // move all obstacles
-            for (top, bottom) in obstacles.iter_mut() {
-                top.pos.x += top.vel.x;
-                top.pos.y += top.vel.y;
+            if input.key_pressed(VirtualKeyCode::Space) {
+                player.vel.y = 1.0;
+            }
 
-                bottom.pos.x += bottom.vel.x;
-                bottom.pos.y += bottom.vel.y;
+            available_time -= DT;
+            // update acceleration for bird
+            player.vel.y -= 0.04;
+
+            // update position
+            player.pos.x -= player.vel.x;
+            player.pos.y -= player.vel.y;
+            for obstacle in obstacles.iter_mut() {
+                obstacle.pos.x -= obstacle.vel.x;
+                obstacle.pos.y += obstacle.vel.y;
+            }
+
+            let contacts = collision::gather_contacts(&player, &obstacles);
+            for contact in contacts.iter() {
+                use collision::{Contact, ContactID};
+                match contact.get_ids() {
+                    (ContactID::Player, ContactID::Obstacle) => {
+                        player.pos = Vec2::new(30.0, HEIGHT as f32 / 2.0 - 10.0);
+                        player.vel = Vec2::new(0.0, 0.0);
+                        obstacles.clear();
+                        last_added_rect = Instant::now();
+                    }
+                    _ => {}
+                }
+            }
+
+            if since.duration_since(last_added_rect) >= Duration::from_secs(3) {
+                let (top, bottom) = generate.generate_obstacles();
+                obstacles.push(top);
+                obstacles.push(bottom);
+                last_added_rect = Instant::now();
             }
         }
+
         since = Instant::now();
         window.request_redraw();
     });
