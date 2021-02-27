@@ -6,14 +6,13 @@ use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper;
 
-use rodio::Source;
+use rodio::{Source, PlayError};
 use std::fs::File;
 use std::io::BufReader;
 
 use std::time::{Duration, Instant};
 
 const DT: f64 = 1.0 / 60.0;
-const DEPTH: usize = 4;
 const WIDTH: usize = 240;
 const HEIGHT: usize = 360;
 
@@ -33,7 +32,7 @@ fn clear(fb: &mut [u8], c: Color) {
 }
 
 fn main() {
-    let (stream, stream_handle) = rodio::OutputStream::try_default().unwrap();
+    let (_stream, stream_handle) = rodio::OutputStream::try_default().unwrap();
 
     let file1 = File::open("birdcoo.mp3").unwrap();
     let file2 = File::open("birdflap.mp3").unwrap();
@@ -46,15 +45,14 @@ fn main() {
         .take_duration(Duration::from_secs(9))
         .repeat_infinite();
     let _source2 = source2
-        .take_duration(Duration::from_secs(4))
-        .repeat_infinite();
+        .take_duration(Duration::from_secs(4)).repeat_infinite();
     let _source3 = source3
         .take_duration(Duration::from_secs(31))
         .repeat_infinite();
 
-    stream_handle.play_raw(_source1.convert_samples());
-    stream_handle.play_raw(_source2.convert_samples());
-    stream_handle.play_raw(_source3.convert_samples());
+    let _ = stream_handle.play_raw(_source1.convert_samples());
+    let _ = stream_handle.play_raw(_source2.convert_samples());
+    let _ = stream_handle.play_raw(_source3.convert_samples());
 
     let event_loop = EventLoop::new();
     let mut input = WinitInputHelper::new();
@@ -63,34 +61,50 @@ fn main() {
         size: Vec2::new(20.0, 20.0),
         vel: Vec2::new(0.0, 0.0),
     };
-    let mut generate = generation::Obstacles {
+
+    let spawn_x = 260.0;
+    let generate = generation::Obstacles {
         obstacles: vec![
             (
                 MovingRect {
-                    pos: Vec2::new(220.0, 0.0),
+                    pos: Vec2::new(spawn_x, 0.0),
                     vel: Vec2::new(0.2, 0.0),
                     size: Vec2::new(20.0, 80.0),
                 },
                 MovingRect {
-                    pos: Vec2::new(220.0, HEIGHT as f32 - 80.0),
+                    pos: Vec2::new(spawn_x, HEIGHT as f32 - 120.0),
                     vel: Vec2::new(0.2, 0.0),
-                    size: Vec2::new(20.0, 80.0),
+                    size: Vec2::new(20.0, 120.0),
                 },
+            ),
+            (
+                MovingRect {
+                    pos: Vec2::new(spawn_x, 0.0),
+                    vel: Vec2::new(0.2, 0.0),
+                    size: Vec2::new(20.0, 160.0),
+                },
+                MovingRect {
+                    pos: Vec2::new(spawn_x, HEIGHT as f32 - 230.0),
+                    vel: Vec2::new(0.2, 0.0),
+                    size: Vec2::new(20.0, 130.0),
+                },
+                
             ),
             (
                 MovingRect {
                     pos: Vec2::new(220.0, 0.0),
                     vel: Vec2::new(0.2, 0.0),
-                    size: Vec2::new(20.0, 100.0),
+                    size: Vec2::new(20.0, 70.0),
                 },
                 MovingRect {
-                    pos: Vec2::new(220.0, HEIGHT as f32 - 80.0),
+                    pos: Vec2::new(220.0, HEIGHT as f32 - 130.0),
                     vel: Vec2::new(0.2, 0.0),
-                    size: Vec2::new(20.0, 60.0),
+                    size: Vec2::new(20.0, 230.0),
                 },
+                
             ),
         ],
-        frequency_values: vec![1, 3],
+        frequency_values: vec![1,1,1],
     };
     let mut obstacles: Vec<MovingRect> = Vec::new();
     let window = {
@@ -116,9 +130,12 @@ fn main() {
         [0, 0, 255, 255],
         [255, 0, 255, 255],
     ];
+
     let mut last_added_rect = Instant::now();
     let mut available_time = 0.0;
     let mut since = Instant::now();
+
+    let mut score = 0;
 
     event_loop.run(move |event, _, control_flow| {
         // Draw the current frame
@@ -166,11 +183,13 @@ fn main() {
         }
 
         while available_time >= DT {
+            since = Instant::now();
+            available_time -= DT;
+
             if input.key_pressed(VirtualKeyCode::Space) {
-                player.vel.y = 1.0;
+                player.vel.y = 2.0;
             }
 
-            available_time -= DT;
             // update acceleration for bird
             player.vel.y -= 0.04;
 
@@ -182,29 +201,30 @@ fn main() {
                 obstacle.pos.y += obstacle.vel.y;
             }
 
-            let contacts = collision::gather_contacts(&player, &obstacles);
-            for contact in contacts.iter() {
-                use collision::{Contact, ContactID};
-                match contact.get_ids() {
-                    (ContactID::Player, ContactID::Obstacle) => {
-                        player.pos = Vec2::new(30.0, HEIGHT as f32 / 2.0 - 10.0);
-                        player.vel = Vec2::new(0.0, 0.0);
-                        obstacles.clear();
-                        last_added_rect = Instant::now();
-                    }
-                    _ => {}
-                }
-            }
-
-            if since.duration_since(last_added_rect) >= Duration::from_secs(3) {
+            if since.duration_since(last_added_rect) >= Duration::from_secs(7) {
                 let (top, bottom) = generate.generate_obstacles();
                 obstacles.push(top);
                 obstacles.push(bottom);
                 last_added_rect = Instant::now();
+                since = Instant::now();
             }
         }
 
-        since = Instant::now();
+        let contacts = collision::gather_contacts(&player, &obstacles);
+        for contact in contacts.iter() {
+            use collision::ContactID;
+            match contact.get_ids() {
+                (ContactID::Player, ContactID::Obstacle) => {
+                    player.pos = Vec2::new(30.0, HEIGHT as f32 / 2.0 - 10.0);
+                    player.vel = Vec2::new(0.0, 0.0);
+                    obstacles.clear();
+                    last_added_rect = Instant::now();
+                    break;
+                }
+                _ => {}
+            }
+        }
+
         window.request_redraw();
     });
 }
