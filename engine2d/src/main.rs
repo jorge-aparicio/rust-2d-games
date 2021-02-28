@@ -13,7 +13,6 @@ use std::io::BufReader;
 use std::time::{Duration, Instant};
 
 const DT: f64 = 1.0 / 60.0;
-const DEPTH: usize = 4;
 const WIDTH: usize = 240;
 const HEIGHT: usize = 360;
 
@@ -22,6 +21,19 @@ const HEIGHT: usize = 360;
 mod collision;
 mod generation;
 mod objects;
+
+struct GameState {
+    player: MovingRect,
+    obstacles: Vec<Rect>,
+    obstacle_data: Vec<ObstacleData>,
+    move_vel: f32,
+    score: u32,
+    time_between: u32,
+}
+
+struct ObstacleData {
+    passed: bool,
+}
 
 // pixels gives us an rgba8888 framebuffer
 fn clear(fb: &mut [u8], c: Color) {
@@ -33,7 +45,7 @@ fn clear(fb: &mut [u8], c: Color) {
 }
 
 fn main() {
-    let (stream, stream_handle) = rodio::OutputStream::try_default().unwrap();
+    let (_stream, _stream_handle) = rodio::OutputStream::try_default().unwrap();
 
     let file1 = File::open("birdcoo.mp3").unwrap();
     let file2 = File::open("birdflap.mp3").unwrap();
@@ -52,47 +64,30 @@ fn main() {
         .take_duration(Duration::from_secs(31))
         .repeat_infinite();
 
-    stream_handle.play_raw(_source1.convert_samples());
-    stream_handle.play_raw(_source2.convert_samples());
-    stream_handle.play_raw(_source3.convert_samples());
+    // let _ = stream_handle.play_raw(_source1.convert_samples());
+    // let _ = stream_handle.play_raw(_source2.convert_samples());
+    // let _ = stream_handle.play_raw(_source3.convert_samples());
 
     let event_loop = EventLoop::new();
     let mut input = WinitInputHelper::new();
-    let mut player = MovingRect {
-        pos: Vec2::new(30.0, HEIGHT as f32 / 2.0 - 10.0), // idk what this looks like
-        size: Vec2::new(20.0, 20.0),
-        vel: Vec2::new(0.0, 0.0),
-    };
-    let mut generate = generation::Obstacles {
-        obstacles: vec![
-            (
-                MovingRect {
-                    pos: Vec2::new(220.0, 0.0),
-                    vel: Vec2::new(0.2, 0.0),
-                    size: Vec2::new(20.0, 80.0),
-                },
-                MovingRect {
-                    pos: Vec2::new(220.0, HEIGHT as f32 - 80.0),
-                    vel: Vec2::new(0.2, 0.0),
-                    size: Vec2::new(20.0, 80.0),
-                },
-            ),
-            (
-                MovingRect {
-                    pos: Vec2::new(220.0, 0.0),
-                    vel: Vec2::new(0.2, 0.0),
-                    size: Vec2::new(20.0, 100.0),
-                },
-                MovingRect {
-                    pos: Vec2::new(220.0, HEIGHT as f32 - 80.0),
-                    vel: Vec2::new(0.2, 0.0),
-                    size: Vec2::new(20.0, 60.0),
-                },
-            ),
-        ],
+    let generate = generation::Obstacles {
+        obstacles: vec![(80, 80), (60, 60)],
         frequency_values: vec![1, 3],
     };
-    let mut obstacles: Vec<MovingRect> = Vec::new();
+
+    let mut state = GameState {
+        player: MovingRect {
+            pos: Vec2::new(30.0, HEIGHT as f32 / 2.0 - 10.0), // idk what this looks like
+            size: Vec2::new(20.0, 20.0),
+            vel: Vec2::new(0.0, 0.0),
+        },
+        obstacles: Vec::new(),
+        obstacle_data: Vec::new(),
+        score: 0,
+        move_vel: 1.0,
+        time_between: 3000,
+    };
+
     let window = {
         let size = LogicalSize::new(WIDTH as f64, HEIGHT as f64);
         WindowBuilder::new()
@@ -116,6 +111,7 @@ fn main() {
         [0, 0, 255, 255],
         [255, 0, 255, 255],
     ];
+
     let mut last_added_rect = Instant::now();
     let mut available_time = 0.0;
     let mut since = Instant::now();
@@ -128,18 +124,27 @@ fn main() {
 
             filled_rect(
                 fb,
-                (player.pos.x.trunc() as i32, player.pos.y.trunc() as i32),
-                (player.size.x.trunc() as i32, player.size.y.trunc() as i32),
+                (
+                    state.player.pos.x.trunc() as i32,
+                    state.player.pos.y.trunc() as i32,
+                ),
+                (
+                    state.player.size.x.trunc() as i32,
+                    state.player.size.y.trunc() as i32,
+                ),
                 colors[5],
             );
 
-            // draw obstacles
-            
-            for obstacle in obstacles.iter() {
+            // draw state.obstacles
+
+            for obstacle in state.obstacles.iter() {
                 filled_rect(
                     fb,
                     (obstacle.pos.x.trunc() as i32, obstacle.pos.y.trunc() as i32),
-                    (obstacle.size.x.trunc() as i32, obstacle.size.y.trunc() as i32),
+                    (
+                        obstacle.size.x.trunc() as i32,
+                        obstacle.size.y.trunc() as i32,
+                    ),
                     colors[0],
                 );
             }
@@ -166,45 +171,93 @@ fn main() {
         }
 
         while available_time >= DT {
+            since = Instant::now();
+            available_time -= DT;
+
             if input.key_pressed(VirtualKeyCode::Space) {
-                player.vel.y = 1.0;
+                state.player.vel.y = 1.5;
             }
 
-            available_time -= DT;
             // update acceleration for bird
-            player.vel.y -= 0.04;
+            state.player.vel.y -= 0.04;
 
             // update position
-            player.pos.x -= player.vel.x;
-            player.pos.y -= player.vel.y;
-            for obstacle in obstacles.iter_mut() {
-                obstacle.pos.x -= obstacle.vel.x;
-                obstacle.pos.y += obstacle.vel.y;
+            state.player.pos.x -= state.player.vel.x;
+            state.player.pos.y -= state.player.vel.y;
+            for obstacle in state.obstacles.iter_mut() {
+                obstacle.pos.x -= state.move_vel;
             }
 
-            let contacts = collision::gather_contacts(&player, &obstacles);
+            let contacts = collision::gather_contacts(&state.player, &state.obstacles);
             for contact in contacts.iter() {
-                use collision::{Contact, ContactID};
+                use collision::ContactID;
                 match contact.get_ids() {
                     (ContactID::Player, ContactID::Obstacle) => {
-                        player.pos = Vec2::new(30.0, HEIGHT as f32 / 2.0 - 10.0);
-                        player.vel = Vec2::new(0.0, 0.0);
-                        obstacles.clear();
+                        state.player.pos = Vec2::new(30.0, HEIGHT as f32 / 2.0 - 10.0);
+                        state.player.vel = Vec2::new(0.0, 0.0);
+                        state.obstacles.clear();
+                        state.time_between = 3000;
                         last_added_rect = Instant::now();
+                        since = Instant::now();
                     }
                     _ => {}
                 }
             }
 
-            if since.duration_since(last_added_rect) >= Duration::from_secs(3) {
+            if state.obstacles.len() >= 2
+                && state.obstacles[0].pos.x + state.obstacles[0].size.x <= 0.0
+            {
+                // remove the first two state.obstacles
+                state.obstacles.remove(0);
+                state.obstacles.remove(0);
+                state.obstacle_data.remove(0);
+                state.obstacle_data.remove(0);
+            }
+
+            if since.duration_since(last_added_rect)
+                >= Duration::from_millis(state.time_between as u64)
+            {
                 let (top, bottom) = generate.generate_obstacles();
-                obstacles.push(top);
-                obstacles.push(bottom);
+                state.obstacles.push(Rect {
+                    pos: Vec2::new(WIDTH as f32, 0.0),
+                    size: Vec2::new(20.0, top as f32),
+                });
+                state.obstacles.push(Rect {
+                    pos: Vec2::new(WIDTH as f32, HEIGHT as f32 - bottom as f32),
+                    size: Vec2::new(20.0, bottom as f32),
+                });
+                state.obstacle_data.push(ObstacleData { passed: false });
+                state.obstacle_data.push(ObstacleData { passed: false });
                 last_added_rect = Instant::now();
             }
         }
 
-        since = Instant::now();
+        for (i, (obst, data)) in state
+            .obstacles
+            .iter_mut()
+            .zip(state.obstacle_data.iter_mut())
+            .enumerate()
+        {
+            if state.player.pos.x > obst.pos.x && !data.passed {
+                data.passed = true;
+                if i % 2 == 0 {
+                    state.score += 1;
+                    if state.move_vel < 4.0 {
+                        state.move_vel *= 1.1;
+                    }
+                    println!("{}", state.score);
+                    if state.obstacles.len() >= 4
+                        && state.obstacles[state.obstacles.len() - 1].pos.x
+                            - state.obstacles[state.obstacles.len() - 3].pos.x
+                            > state.obstacles[state.obstacles.len() - 3].size.x * 2.0
+                    {
+                        state.time_between = (state.time_between - 100).max(400);
+                    }
+                    break;
+                }
+            }
+        }
+
         window.request_redraw();
     });
 }
