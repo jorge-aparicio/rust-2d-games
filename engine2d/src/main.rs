@@ -6,7 +6,7 @@ use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper;
 
-use rodio::Source;
+use rodio::Source; //, PlayError};
 use std::fs::File;
 use std::io::BufReader;
 
@@ -71,8 +71,8 @@ fn main() {
     let event_loop = EventLoop::new();
     let mut input = WinitInputHelper::new();
     let generate = generation::Obstacles {
-        obstacles: vec![(80, 80), (60, 60)],
-        frequency_values: vec![1, 3],
+        obstacles: vec![(80, 120), (160, 130), (70, 230)],
+        frequency_values: vec![1, 1, 1],
     };
 
     let mut state = GameState {
@@ -175,7 +175,7 @@ fn main() {
             available_time -= DT;
 
             if input.key_pressed(VirtualKeyCode::Space) {
-                state.player.vel.y = 1.5;
+                state.player.vel.y = 2.0;
             }
 
             // update acceleration for bird
@@ -197,6 +197,7 @@ fn main() {
                         state.player.vel = Vec2::new(0.0, 0.0);
                         state.obstacles.clear();
                         state.time_between = 3000;
+                        state.score = 0;
                         last_added_rect = Instant::now();
                         since = Instant::now();
                     }
@@ -229,6 +230,7 @@ fn main() {
                 state.obstacle_data.push(ObstacleData { passed: false });
                 state.obstacle_data.push(ObstacleData { passed: false });
                 last_added_rect = Instant::now();
+                since = Instant::now();
             }
         }
 

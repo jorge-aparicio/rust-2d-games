@@ -1,4 +1,4 @@
-#[allow(dead_code)]
+#![allow(dead_code)]
 const DEPTH: usize = 4;
 const WIDTH: usize = 240;
 const HEIGHT: usize = 360;
