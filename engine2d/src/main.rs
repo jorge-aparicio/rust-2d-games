@@ -1,4 +1,3 @@
-use objects::*;
 use pixels::{Pixels, SurfaceTexture};
 use winit::dpi::LogicalSize;
 use winit::event::{Event, VirtualKeyCode};
@@ -10,20 +9,19 @@ use rodio::Source; //, PlayError};
 use std::fs::File;
 use std::io::BufReader;
 
+mod collision;
+mod generation;
+mod input;
+mod objects;
+mod text;
+
+use objects::*;
+
 use std::time::{Duration, Instant};
 
 const DT: f64 = 1.0 / 60.0;
 const WIDTH: usize = 240;
 const HEIGHT: usize = 360;
-
-// We'll make our Color type an RGBA8888 pixel.
-
-mod collision;
-mod generation;
-mod input;
-mod objects;
-
-use input::Input;
 
 struct GameState {
     player: MovingRect,
@@ -84,18 +82,20 @@ fn main() {
     };
 
     let mut state = GameState {
-        player: MovingRect {
-            pos: Vec2::new(30.0, HEIGHT as f32 / 2.0 - 10.0), // idk what this looks like
-            size: Vec2::new(20.0, 20.0),
-            vel: Vec2::new(0.0, 0.0),
-        },
+        player: MovingRect::new(
+            30.0,
+            HEIGHT as f32 / 2.0 - 10.0,
+            20.0,
+            20.0,
+            Vec2::new(0.0, 0.0),
+        ),
         obstacles: Vec::new(),
         obstacle_data: Vec::new(),
         score: 0,
         move_vel: 1.0,
         time_between: 3000,
     };
-    let mut input = Input::new();
+    let mut input = input::Input::new();
     input.add_key_to_map(ActionID::Flap, VirtualKeyCode::Space);
 
     let window = {
@@ -134,14 +134,8 @@ fn main() {
 
             filled_rect(
                 fb,
-                (
-                    state.player.pos.x.trunc() as i32,
-                    state.player.pos.y.trunc() as i32,
-                ),
-                (
-                    state.player.size.x.trunc() as i32,
-                    state.player.size.y.trunc() as i32,
-                ),
+                (state.player.x.trunc() as i32, state.player.y.trunc() as i32),
+                (state.player.x.trunc() as i32, state.player.y.trunc() as i32),
                 colors[5],
             );
 
@@ -150,11 +144,8 @@ fn main() {
             for obstacle in state.obstacles.iter() {
                 filled_rect(
                     fb,
-                    (obstacle.pos.x.trunc() as i32, obstacle.pos.y.trunc() as i32),
-                    (
-                        obstacle.size.x.trunc() as i32,
-                        obstacle.size.y.trunc() as i32,
-                    ),
+                    (obstacle.x.trunc() as i32, obstacle.y.trunc() as i32),
+                    (obstacle.w.trunc() as i32, obstacle.h.trunc() as i32),
                     colors[0],
                 );
             }
@@ -193,17 +184,18 @@ fn main() {
             state.player.vel.y -= 0.04;
 
             // update position
-            state.player.pos.x -= state.player.vel.x;
-            state.player.pos.y -= state.player.vel.y;
+            state.player.x -= state.player.vel.x;
+            state.player.y -= state.player.vel.y;
             for obstacle in state.obstacles.iter_mut() {
-                obstacle.pos.x -= state.move_vel;
+                obstacle.x -= state.move_vel;
             }
 
-            /* let contacts = collision::gather_contacts(&state.player, &state.obstacles);
+            let contacts = collision::gather_contacts(&state.player, &state.obstacles);
             for contact in contacts.iter() {
                 use collision::ContactID;
                 if let (ContactID::Player, ContactID::Obstacle) = contact.get_ids() {
-                    state.player.pos = Vec2::new(30.0, HEIGHT as f32 / 2.0 - 10.0);
+                    state.player.x = 30.0;
+                    state.player.y = HEIGHT as f32 / 2.0 - 10.0;
                     state.player.vel = Vec2::new(0.0, 0.0);
                     state.obstacles.clear();
                     state.time_between = 3000;
@@ -211,11 +203,9 @@ fn main() {
                     last_added_rect = Instant::now();
                     since = Instant::now();
                 }
-            } */
+            }
 
-            if state.obstacles.len() >= 2
-                && state.obstacles[0].pos.x + state.obstacles[0].size.x <= 0.0
-            {
+            if state.obstacles.len() >= 2 && state.obstacles[0].x + state.obstacles[0].w <= 0.0 {
                 // remove the first two state.obstacles
                 state.obstacles.remove(0);
                 state.obstacles.remove(0);
@@ -227,14 +217,15 @@ fn main() {
                 >= Duration::from_millis(state.time_between as u64)
             {
                 let (top, bottom) = generate.generate_obstacles();
-                state.obstacles.push(Rect {
-                    pos: Vec2::new(WIDTH as f32, 0.0),
-                    size: Vec2::new(20.0, top as f32),
-                });
-                state.obstacles.push(Rect {
-                    pos: Vec2::new(WIDTH as f32, HEIGHT as f32 - bottom as f32),
-                    size: Vec2::new(20.0, bottom as f32),
-                });
+                state
+                    .obstacles
+                    .push(Rect::new(WIDTH as f32, 0.0, 20.0, top as f32));
+                state.obstacles.push(Rect::new(
+                    WIDTH as f32,
+                    HEIGHT as f32 - bottom as f32,
+                    20.0,
+                    bottom as f32,
+                ));
                 state.obstacle_data.push(ObstacleData { passed: false });
                 state.obstacle_data.push(ObstacleData { passed: false });
                 last_added_rect = Instant::now();
@@ -247,7 +238,7 @@ fn main() {
                 .zip(state.obstacle_data.iter_mut())
                 .enumerate()
             {
-                if state.player.pos.x > obst.pos.x && !data.passed {
+                if state.player.x > obst.x && !data.passed {
                     data.passed = true;
                     if i % 2 == 0 {
                         state.score += 1;
@@ -256,9 +247,9 @@ fn main() {
                         }
                         println!("{}", state.score);
                         if state.obstacles.len() >= 4
-                            && state.obstacles[state.obstacles.len() - 1].pos.x
-                                - state.obstacles[state.obstacles.len() - 3].pos.x
-                                > state.obstacles[state.obstacles.len() - 3].size.x * 2.0
+                            && state.obstacles[state.obstacles.len() - 1].x
+                                - state.obstacles[state.obstacles.len() - 3].x
+                                > state.obstacles[state.obstacles.len() - 3].w * 2.0
                         {
                             state.time_between = (state.time_between - 200).max(1000);
                         }

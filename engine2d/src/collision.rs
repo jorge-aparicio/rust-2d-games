@@ -17,10 +17,10 @@ pub enum ContactID {
 pub fn gather_contacts(player: &MovingRect, obstacles: &[Rect]) -> Vec<Contact> {
     let mut contacts = Vec::new();
     for obstacle in obstacles.iter() {
-        if player.pos.x <= obstacle.pos.x + obstacle.size.x
-            && obstacle.pos.x <= player.pos.x + player.size.x
-            && player.pos.y <= obstacle.pos.y + obstacle.size.y
-            && obstacle.pos.y <= player.pos.y + player.size.y
+        if player.x <= obstacle.x + obstacle.w
+            && obstacle.x <= player.x + player.w
+            && player.y <= obstacle.y + obstacle.h
+            && obstacle.y <= player.y + player.h
         {
             contacts.push(Contact(ContactID::Player, ContactID::Obstacle));
         }

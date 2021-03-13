@@ -4,6 +4,7 @@ const WIDTH: usize = 240;
 const HEIGHT: usize = 360;
 
 pub type Color = [u8; DEPTH];
+
 pub fn hline(fb: &mut [u8], x0: usize, x1: usize, y: usize, c: Color) {
     assert!(y < HEIGHT);
     assert!(x0 <= x1);
@@ -58,14 +59,45 @@ impl Vec2 {
 
 #[derive(Copy, Clone)]
 pub struct MovingRect {
-    pub pos: Vec2,
+    pub x: f32,
+    pub y: f32,
+    pub w: f32,
+    pub h: f32,
     pub vel: Vec2,
-    pub size: Vec2,
 }
 
+impl MovingRect {
+    pub fn new(x: f32, y: f32, w: f32, h: f32, vel: Vec2) -> Self {
+        Self { x, y, w, h, vel }
+    }
+}
+
+#[derive(Copy, Clone)]
 pub struct Rect {
-    pub pos: Vec2,
-    pub size: Vec2,
+    pub x: f32,
+    pub y: f32,
+    pub w: f32,
+    pub h: f32,
+}
+
+impl Rect {
+    pub fn new(x: f32, y: f32, w: f32, h: f32) -> Self {
+        Self { x, y, w, h }
+    }
+
+    pub fn pos(&self) -> Vec2 {
+        Vec2::new(self.x, self.y)
+    }
+
+    pub fn size(&self) -> Vec2 {
+        Vec2::new(self.w, self.h)
+    }
+}
+
+pub fn dist((x0, y0): (i32, i32), (x1, y1): (i32, i32)) -> f32 {
+    let dx = (x0 - x1) as f32;
+    let dy = (y0 - y1) as f32;
+    (dx * dx + dy * dy).sqrt()
 }
 
 pub fn filled_rect(fb: &mut [u8], (x, y): (i32, i32), (w, h): (i32, i32), col: Color) {
@@ -87,10 +119,4 @@ pub fn filled_circle(fb: &mut [u8], (x, y): (i32, i32), r: u64, col: Color) {
             }
         }
     }
-}
-
-pub fn dist((x0, y0): (i32, i32), (x1, y1): (i32, i32)) -> f32 {
-    let dx = (x0 - x1) as f32;
-    let dy = (y0 - y1) as f32;
-    (dx * dx + dy * dy).sqrt()
 }
