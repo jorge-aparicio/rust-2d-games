@@ -20,7 +20,10 @@ const HEIGHT: usize = 360;
 
 mod collision;
 mod generation;
+mod input;
 mod objects;
+
+use input::Input;
 
 struct GameState {
     player: MovingRect,
@@ -33,6 +36,11 @@ struct GameState {
 
 struct ObstacleData {
     passed: bool,
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+enum ActionID {
+    Flap,
 }
 
 // pixels gives us an rgba8888 framebuffer
@@ -69,7 +77,7 @@ fn main() {
     // let _ = stream_handle.play_raw(_source3.convert_samples());
 
     let event_loop = EventLoop::new();
-    let mut input = WinitInputHelper::new();
+    let mut input_events = WinitInputHelper::new();
     let generate = generation::Obstacles {
         obstacles: vec![(80, 120), (160, 130), (70, 230)],
         frequency_values: vec![1, 1, 1],
@@ -87,6 +95,8 @@ fn main() {
         move_vel: 1.0,
         time_between: 3000,
     };
+    let mut input = Input::new();
+    input.add_key_to_map(ActionID::Flap, VirtualKeyCode::Space);
 
     let window = {
         let size = LogicalSize::new(WIDTH as f64, HEIGHT as f64);
@@ -156,16 +166,16 @@ fn main() {
 
             available_time += since.elapsed().as_secs_f64();
         }
-        // Handle input events
-        if input.update(&event) {
+        // Handle input_events events
+        if input_events.update(&event) {
             // Close events
-            if input.key_pressed(VirtualKeyCode::Escape) || input.quit() {
+            if input_events.key_pressed(VirtualKeyCode::Escape) || input_events.quit() {
                 *control_flow = ControlFlow::Exit;
                 return;
             }
 
             // Resize the window
-            if let Some(size) = input.window_resized() {
+            if let Some(size) = input_events.window_resized() {
                 pixels.resize(size.width, size.height);
             }
         }
@@ -174,11 +184,12 @@ fn main() {
             since = Instant::now();
             available_time -= DT;
 
-            if input.key_pressed(VirtualKeyCode::Space) {
+            input.update(&input_events);
+            if input.is_pressed(ActionID::Flap) {
                 state.player.vel.y = 2.0;
             }
 
-            // update acceleration for bird
+            // update velocity for bird
             state.player.vel.y -= 0.04;
 
             // update position
@@ -188,22 +199,19 @@ fn main() {
                 obstacle.pos.x -= state.move_vel;
             }
 
-            let contacts = collision::gather_contacts(&state.player, &state.obstacles);
+            /* let contacts = collision::gather_contacts(&state.player, &state.obstacles);
             for contact in contacts.iter() {
                 use collision::ContactID;
-                match contact.get_ids() {
-                    (ContactID::Player, ContactID::Obstacle) => {
-                        state.player.pos = Vec2::new(30.0, HEIGHT as f32 / 2.0 - 10.0);
-                        state.player.vel = Vec2::new(0.0, 0.0);
-                        state.obstacles.clear();
-                        state.time_between = 3000;
-                        state.score = 0;
-                        last_added_rect = Instant::now();
-                        since = Instant::now();
-                    }
-                    _ => {}
+                if let (ContactID::Player, ContactID::Obstacle) = contact.get_ids() {
+                    state.player.pos = Vec2::new(30.0, HEIGHT as f32 / 2.0 - 10.0);
+                    state.player.vel = Vec2::new(0.0, 0.0);
+                    state.obstacles.clear();
+                    state.time_between = 3000;
+                    state.score = 0;
+                    last_added_rect = Instant::now();
+                    since = Instant::now();
                 }
-            }
+            } */
 
             if state.obstacles.len() >= 2
                 && state.obstacles[0].pos.x + state.obstacles[0].size.x <= 0.0
@@ -232,30 +240,30 @@ fn main() {
                 last_added_rect = Instant::now();
                 since = Instant::now();
             }
-        }
 
-        for (i, (obst, data)) in state
-            .obstacles
-            .iter_mut()
-            .zip(state.obstacle_data.iter_mut())
-            .enumerate()
-        {
-            if state.player.pos.x > obst.pos.x && !data.passed {
-                data.passed = true;
-                if i % 2 == 0 {
-                    state.score += 1;
-                    if state.move_vel < 4.0 {
-                        state.move_vel *= 1.1;
+            for (i, (obst, data)) in state
+                .obstacles
+                .iter_mut()
+                .zip(state.obstacle_data.iter_mut())
+                .enumerate()
+            {
+                if state.player.pos.x > obst.pos.x && !data.passed {
+                    data.passed = true;
+                    if i % 2 == 0 {
+                        state.score += 1;
+                        if state.move_vel < 3.0 {
+                            state.move_vel *= 1.1;
+                        }
+                        println!("{}", state.score);
+                        if state.obstacles.len() >= 4
+                            && state.obstacles[state.obstacles.len() - 1].pos.x
+                                - state.obstacles[state.obstacles.len() - 3].pos.x
+                                > state.obstacles[state.obstacles.len() - 3].size.x * 2.0
+                        {
+                            state.time_between = (state.time_between - 200).max(1000);
+                        }
+                        break;
                     }
-                    println!("{}", state.score);
-                    if state.obstacles.len() >= 4
-                        && state.obstacles[state.obstacles.len() - 1].pos.x
-                            - state.obstacles[state.obstacles.len() - 3].pos.x
-                            > state.obstacles[state.obstacles.len() - 3].size.x * 2.0
-                    {
-                        state.time_between = (state.time_between - 100).max(400);
-                    }
-                    break;
                 }
             }
         }
