@@ -24,19 +24,20 @@ impl TextInfo {
 }
 
 pub trait DrawTextExt {
-    fn draw_string_at_pos(&mut self, string: String, pos: Vec2, font: &Rc<TextInfo>);
+    fn draw_text_at_pos(&mut self, string: String, pos: Vec2, font: &TextInfo);
 }
 
 use crate::screen::Screen;
 impl<'fb> DrawTextExt for Screen<'fb> {
-    fn draw_string_at_pos(&mut self, string: String, pos: Vec2, font: &Rc<TextInfo>) {
+    // makes a bunch of assumptions, such as that all the characters are the same height. works because we're using a monospace/height font, won't necessarily work for others
+    fn draw_text_at_pos(&mut self, string: String, pos: Vec2, font: &TextInfo) {
         // starting positions
         let mut x = pos.x as f32;
         let y = pos.y as f32;
         for ch in string.chars() {
             if let Some(rect) = font.info.get(&ch) {
                 self.bitblt(&font.image, *rect, Vec2::new(x, y));
-                x += rect.x;
+                x += rect.w;
             }
         }
     }
