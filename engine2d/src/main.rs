@@ -9,11 +9,15 @@ use rodio::Source; //, PlayError};
 use std::fs::File;
 use std::io::BufReader;
 
+mod animation;
 mod collision;
 mod generation;
 mod input;
 mod objects;
+mod screen;
+mod sprite;
 mod text;
+mod texture;
 
 use objects::*;
 
@@ -22,6 +26,7 @@ use std::time::{Duration, Instant};
 const DT: f64 = 1.0 / 60.0;
 const WIDTH: usize = 240;
 const HEIGHT: usize = 360;
+const DEPTH: usize = 4;
 
 struct GameState {
     player: MovingRect,
@@ -41,21 +46,12 @@ enum ActionID {
     Flap,
 }
 
-// pixels gives us an rgba8888 framebuffer
-fn clear(fb: &mut [u8], c: Color) {
-    // Four bytes per pixel; chunks_exact_mut gives an iterator over 4-element slices.
-    // So this way we can use copy_from_slice to copy our color slice into px very quickly.
-    for px in fb.chunks_exact_mut(4) {
-        px.copy_from_slice(&c);
-    }
-}
-
 fn main() {
     let (_stream, _stream_handle) = rodio::OutputStream::try_default().unwrap();
 
-    let file1 = File::open("birdcoo.mp3").unwrap();
-    let file2 = File::open("birdflap.mp3").unwrap();
-    let file3 = File::open("city-quiet.mp3").unwrap();
+    let file1 = File::open("../content/birdcoo.mp3").unwrap();
+    let file2 = File::open("../content/birdflap.mp3").unwrap();
+    let file3 = File::open("../content/city-quiet.mp3").unwrap();
     let source1 = rodio::Decoder::new(BufReader::new(file1)).unwrap();
     let source2 = rodio::Decoder::new(BufReader::new(file2)).unwrap();
     let source3 = rodio::Decoder::new(BufReader::new(file3)).unwrap();
@@ -129,25 +125,14 @@ fn main() {
     event_loop.run(move |event, _, control_flow| {
         // Draw the current frame
         if let Event::RedrawRequested(_) = event {
-            let fb = pixels.get_frame();
-            clear(fb, [0, 0, 0, 255]);
+            let mut screen = screen::Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH);
+            screen.clear([0, 0, 0, 255]);
 
-            filled_rect(
-                fb,
-                (state.player.x.trunc() as i32, state.player.y.trunc() as i32),
-                (state.player.x.trunc() as i32, state.player.y.trunc() as i32),
-                colors[5],
-            );
+            screen.rect(state.player.as_rect(), colors[5]);
 
             // draw state.obstacles
-
             for obstacle in state.obstacles.iter() {
-                filled_rect(
-                    fb,
-                    (obstacle.x.trunc() as i32, obstacle.y.trunc() as i32),
-                    (obstacle.w.trunc() as i32, obstacle.h.trunc() as i32),
-                    colors[0],
-                );
+                screen.rect(*obstacle, colors[0]);
             }
 
             if pixels.render().is_err() {
