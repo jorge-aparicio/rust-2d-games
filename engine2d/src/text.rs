@@ -24,13 +24,13 @@ impl TextInfo {
 }
 
 pub trait DrawTextExt {
-    fn draw_text_at_pos(&mut self, string: String, pos: Vec2, font: &TextInfo);
+    fn draw_text_at_pos(&mut self, string: &str, pos: Vec2, font: &TextInfo);
 }
 
 use crate::screen::Screen;
 impl<'fb> DrawTextExt for Screen<'fb> {
     // makes a bunch of assumptions, such as that all the characters are the same height. works because we're using a monospace/height font, won't necessarily work for others
-    fn draw_text_at_pos(&mut self, string: String, pos: Vec2, font: &TextInfo) {
+    fn draw_text_at_pos(&mut self, string: &str, pos: Vec2, font: &TextInfo) {
         // starting positions
         let mut x = pos.x as f32;
         let y = pos.y as f32;

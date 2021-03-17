@@ -10,17 +10,9 @@ use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper; //, PlayError};
 
-mod animation;
-mod collision;
 mod generation;
-mod input;
-mod objects;
-mod screen;
-mod sprite;
-mod text;
-mod texture;
 
-use objects::*;
+use engine2d::{animation, collision, input, objects::*, screen, sprite, text, texture};
 
 use std::time::{Duration, Instant};
 
@@ -29,7 +21,6 @@ const WIDTH: usize = 240;
 const HEIGHT: usize = 360;
 const DEPTH: usize = 4;
 const CHAR_SIZE: f32 = 16.0;
-
 
 #[derive(Debug)]
 enum Mode {
@@ -60,46 +51,46 @@ enum ActionID {
 
 fn main() {
     let info = [
-                            (' ', Rect::new(0.0, 0.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('!', Rect::new(16.0, 0.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('a', Rect::new(16.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('b', Rect::new(32.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('c', Rect::new(48.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('d', Rect::new(64.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('e', Rect::new(80.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('f', Rect::new(96.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('g', Rect::new(112.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('h', Rect::new(128.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('i', Rect::new(144.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('j', Rect::new(160.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('k', Rect::new(176.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('l', Rect::new(192.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('m', Rect::new(208.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('n', Rect::new(224.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('o', Rect::new(240.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('p', Rect::new(0.0, 80.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('q', Rect::new(16.0, 80.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('r', Rect::new(32.0, 80.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('s', Rect::new(48.0, 80.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('t', Rect::new(64.0, 80.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('u', Rect::new(80.0, 80.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('v', Rect::new(96.0, 80.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('w', Rect::new(112.0, 80.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('x', Rect::new(128.0, 80.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('y', Rect::new(144.0, 80.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('z', Rect::new(160.0, 80.0, CHAR_SIZE, CHAR_SIZE)),
-                            (':', Rect::new(160.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('0', Rect::new(0.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('1', Rect::new(16.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('2', Rect::new(32.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('3', Rect::new(48.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('4', Rect::new(64.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('5', Rect::new(80.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('6', Rect::new(96.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('7', Rect::new(112.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('8', Rect::new(128.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
-                            ('9', Rect::new(144.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
-                        ];
+        (' ', Rect::new(0.0, 0.0, CHAR_SIZE, CHAR_SIZE)),
+        ('!', Rect::new(16.0, 0.0, CHAR_SIZE, CHAR_SIZE)),
+        ('a', Rect::new(16.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
+        ('b', Rect::new(32.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
+        ('c', Rect::new(48.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
+        ('d', Rect::new(64.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
+        ('e', Rect::new(80.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
+        ('f', Rect::new(96.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
+        ('g', Rect::new(112.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
+        ('h', Rect::new(128.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
+        ('i', Rect::new(144.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
+        ('j', Rect::new(160.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
+        ('k', Rect::new(176.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
+        ('l', Rect::new(192.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
+        ('m', Rect::new(208.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
+        ('n', Rect::new(224.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
+        ('o', Rect::new(240.0, 64.0, CHAR_SIZE, CHAR_SIZE)),
+        ('p', Rect::new(0.0, 80.0, CHAR_SIZE, CHAR_SIZE)),
+        ('q', Rect::new(16.0, 80.0, CHAR_SIZE, CHAR_SIZE)),
+        ('r', Rect::new(32.0, 80.0, CHAR_SIZE, CHAR_SIZE)),
+        ('s', Rect::new(48.0, 80.0, CHAR_SIZE, CHAR_SIZE)),
+        ('t', Rect::new(64.0, 80.0, CHAR_SIZE, CHAR_SIZE)),
+        ('u', Rect::new(80.0, 80.0, CHAR_SIZE, CHAR_SIZE)),
+        ('v', Rect::new(96.0, 80.0, CHAR_SIZE, CHAR_SIZE)),
+        ('w', Rect::new(112.0, 80.0, CHAR_SIZE, CHAR_SIZE)),
+        ('x', Rect::new(128.0, 80.0, CHAR_SIZE, CHAR_SIZE)),
+        ('y', Rect::new(144.0, 80.0, CHAR_SIZE, CHAR_SIZE)),
+        ('z', Rect::new(160.0, 80.0, CHAR_SIZE, CHAR_SIZE)),
+        (':', Rect::new(160.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
+        ('0', Rect::new(0.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
+        ('1', Rect::new(16.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
+        ('2', Rect::new(32.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
+        ('3', Rect::new(48.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
+        ('4', Rect::new(64.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
+        ('5', Rect::new(80.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
+        ('6', Rect::new(96.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
+        ('7', Rect::new(112.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
+        ('8', Rect::new(128.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
+        ('9', Rect::new(144.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
+    ];
     let mut state = GameState {
         player: MovingRect::new(
             30.0,
@@ -115,9 +106,7 @@ fn main() {
         time_between: 3000,
         text_info: {
             use std::path::Path;
-            let image = Rc::new(texture::Texture::with_file(Path::new(
-                "../content/ascii.png",
-            )));
+            let image = Rc::new(texture::Texture::with_file(Path::new("content/ascii.png")));
             text::TextInfo::new(&image, &info)
         },
         mode: Mode::Title,
@@ -125,9 +114,9 @@ fn main() {
 
     let (_stream, _stream_handle) = rodio::OutputStream::try_default().unwrap();
 
-    let file1 = File::open("../content/birdcoo.mp3").unwrap();
-    let file2 = File::open("../content/birdflap.mp3").unwrap();
-    let file3 = File::open("../content/city-quiet.mp3").unwrap();
+    let file1 = File::open("content/birdcoo.mp3").unwrap();
+    let file2 = File::open("content/birdflap.mp3").unwrap();
+    let file3 = File::open("content/city-quiet.mp3").unwrap();
     let source1 = rodio::Decoder::new(BufReader::new(file1)).unwrap();
     let source2 = rodio::Decoder::new(BufReader::new(file2)).unwrap();
     let source3 = rodio::Decoder::new(BufReader::new(file3)).unwrap();
@@ -183,48 +172,24 @@ fn main() {
                 if let Event::RedrawRequested(_) = event {
                     let mut screen = screen::Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH);
                     screen.clear([135, 206, 250, 150]);
-                    //screen.rect(state.player.as_rect(), [255, 0, 255, 255]);
-                    //screen.rect(state.player.as_rect(), [255, 0, 255, 255]);
-
-                    // draw state.obstacles
-                    //for obstacle in state.obstacles.iter() {
-                    //  screen.rect(*obstacle, [255, 0, 0, 255]);
-                    //}
 
                     use crate::text::DrawTextExt;
                     screen.draw_text_at_pos(
-                        format!("score: {}", state.score),
+                        format!("score: {}", state.score).as_str(),
                         Vec2::new(0.0, 0.0),
                         &state.text_info,
                     );
-                   
-                    
-
-                    screen.draw_text_at_pos(format!("flappy pigeon"), Vec2::new(20.0, 60.0), {
-                        use std::path::Path;
-                        let image = Rc::new(texture::Texture::with_file(Path::new(
-                            "../content/ascii.png",
-                        )));
-                        
-                        &text::TextInfo::new(&image, &info)
-                    });
-
-                    screen.draw_text_at_pos(format!("press enter"), Vec2::new(40.0, 240.0), {
-                        use std::path::Path;
-                        let image = Rc::new(texture::Texture::with_file(Path::new(
-                            "../content/ascii.png",
-                        )));
-                        
-                        &text::TextInfo::new(&image, &info)
-                    });
-                    screen.draw_text_at_pos(format!("to start"), Vec2::new(65.0, 260.0), {
-                        use std::path::Path;
-                        let image = Rc::new(texture::Texture::with_file(Path::new(
-                            "../content/ascii.png",
-                        )));
-                        
-                        &text::TextInfo::new(&image, &info)
-                    });
+                    screen.draw_text_at_pos(
+                        "flappy pigeon",
+                        Vec2::new(20.0, 60.0),
+                        &state.text_info,
+                    );
+                    screen.draw_text_at_pos(
+                        "press enter",
+                        Vec2::new(40.0, 240.0),
+                        &state.text_info,
+                    );
+                    screen.draw_text_at_pos("to start", Vec2::new(65.0, 260.0), &state.text_info);
 
                     if pixels.render().is_err() {
                         *control_flow = ControlFlow::Exit;
@@ -275,7 +240,7 @@ fn main() {
 
                     use crate::text::DrawTextExt;
                     screen.draw_text_at_pos(
-                        format!("score: {}", state.score),
+                        format!("score: {}", state.score).as_str(),
                         Vec2::new(0.0, 0.0),
                         &state.text_info,
                     );
@@ -287,6 +252,7 @@ fn main() {
 
                     available_time += since.elapsed().as_secs_f64();
                 }
+
                 // Handle input_events events
                 if input_events.update(&event) {
                     // Close events
@@ -383,88 +349,68 @@ fn main() {
                         }
                     }
                 }
-                
             }
             Mode::EndGame => {
                 if let Event::RedrawRequested(_) = event {
                     let mut screen = screen::Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH);
                     screen.clear([200, 0, 0, 150]);
-                    //screen.rect(state.player.as_rect(), [255, 0, 255, 255]);
-                    //screen.rect(state.player.as_rect(), [255, 0, 255, 255]);
-
-                    // draw state.obstacles
-                    //for obstacle in state.obstacles.iter() {
-                    //  screen.rect(*obstacle, [255, 0, 0, 255]);
-                    //}
 
                     use crate::text::DrawTextExt;
                     screen.draw_text_at_pos(
-                        format!("score: {}", state.score),
+                        format!("score: {}", state.score).as_str(),
                         Vec2::new(0.0, 0.0),
                         &state.text_info,
                     );
-                    
 
-                    screen.draw_text_at_pos(format!("game over!!!"), Vec2::new(20.0, 60.0), {
-                        use std::path::Path;
-                        let image = Rc::new(texture::Texture::with_file(Path::new(
-                            "../content/ascii.png",
-                        )));
-                        
-                        &text::TextInfo::new(&image, &info)
-                    });
+                    screen.draw_text_at_pos(
+                        "game over!!!",
+                        Vec2::new(20.0, 60.0),
+                        &state.text_info,
+                    );
 
-                    screen.draw_text_at_pos(format!("press enter"), Vec2::new(40.0, 240.0), {
-                        use std::path::Path;
-                        let image = Rc::new(texture::Texture::with_file(Path::new(
-                            "../content/ascii.png",
-                        )));
-                        
-                        &text::TextInfo::new(&image, &info)
-                    });
-                    screen.draw_text_at_pos(format!("to try again"), Vec2::new(30.0, 260.0), {
-                        use std::path::Path;
-                        let image = Rc::new(texture::Texture::with_file(Path::new(
-                            "../content/ascii.png",
-                        )));
-                        
-                        &text::TextInfo::new(&image, &info)
-                    });
+                    screen.draw_text_at_pos(
+                        "press enter",
+                        Vec2::new(40.0, 240.0),
+                        &state.text_info,
+                    );
+                    screen.draw_text_at_pos(
+                        "to try again",
+                        Vec2::new(30.0, 260.0),
+                        &state.text_info,
+                    );
 
                     if pixels.render().is_err() {
                         *control_flow = ControlFlow::Exit;
                         return;
                     }
                 }
-                    if input_events.update(&event) {
-                        // Close events
-                        if input_events.key_pressed(VirtualKeyCode::Escape) || input_events.quit() {
-                            *control_flow = ControlFlow::Exit;
-                            return;
-                        }
-                        if input_events.key_pressed(VirtualKeyCode::Return) {
-                            state.mode = Mode::Play;
-                            state.player.x = 30.0;
-                            state.player.y = HEIGHT as f32 / 2.0 - 10.0;
-                            state.player.vel = Vec2::new(0.0, 0.0);
-                            state.obstacles.clear();
-                            state.obstacle_data.clear();
-                            state.time_between = 3000;
-                            state.move_vel = 1.0;
-                            state.score = 0;
-                            last_added_rect = Instant::now();
-                            since = Instant::now();
-                            //return;
-                        }
-                        // Resize the window
-                        if let Some(size) = input_events.window_resized() {
-                            pixels.resize(size.width, size.height);
-                            
-                        }
+                if input_events.update(&event) {
+                    // Close events
+                    if input_events.key_pressed(VirtualKeyCode::Escape) || input_events.quit() {
+                        *control_flow = ControlFlow::Exit;
+                        return;
                     }
+                    if input_events.key_pressed(VirtualKeyCode::Return) {
+                        state.mode = Mode::Play;
+                        state.player.x = 30.0;
+                        state.player.y = HEIGHT as f32 / 2.0 - 10.0;
+                        state.player.vel = Vec2::new(0.0, 0.0);
+                        state.obstacles.clear();
+                        state.obstacle_data.clear();
+                        state.time_between = 3000;
+                        state.move_vel = 1.0;
+                        state.score = 0;
+                        last_added_rect = Instant::now();
+                        since = Instant::now();
+                        //return;
+                    }
+                    // Resize the window
+                    if let Some(size) = input_events.window_resized() {
+                        pixels.resize(size.width, size.height);
+                    }
+                }
             }
         }
         window.request_redraw();
-
     });
 }
