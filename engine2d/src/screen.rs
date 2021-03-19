@@ -44,6 +44,48 @@ impl<'fb> Screen<'fb> {
         }
     }
 
+    pub fn rect_lines(&mut self, r: Rect, col: Color) {
+        let x0 = r.x.max(0.0).min(self.width as f32) as usize;
+        let x1 = (r.x + r.w).max(0.0).min(self.width as f32) as usize;
+        let y0 = r.y.max(0.0).min(self.height as f32) as usize;
+        let y1 = (r.y + r.h).max(0.0).min(self.height as f32) as usize;
+        let depth = self.depth;
+        let pitch = self.width * depth;
+
+        // vertical lines
+        if r.x > 0.0 {
+            let x0 = x0.min(self.width - 1);
+            for row in y0..y1 {
+                let pixel_idx = row * pitch + x0 * depth;
+                self.framebuffer[pixel_idx..pixel_idx + depth].copy_from_slice(&col);
+            }
+        }
+        if r.x + r.w < self.width as f32 {
+            let x1 = x1.min(self.width - 1);
+            for row in y0..y1 {
+                let pixel_idx = row * pitch + x1 * depth;
+                self.framebuffer[pixel_idx..pixel_idx + depth].copy_from_slice(&col);
+            }
+        }
+
+        if r.y > 0.0 {
+            let y0 = y0.min(self.height - 1);
+            for p in self.framebuffer[y0 * pitch + x0 * depth..y0 * pitch + x1 * depth]
+                .chunks_exact_mut(depth)
+            {
+                p.copy_from_slice(&col);
+            }
+        }
+        if r.y + r.h < self.height as f32 {
+            let y1 = y1.min(self.height - 1);
+            for p in self.framebuffer[y1 * pitch + x0 * depth..y1 * pitch + x1 * depth]
+                .chunks_exact_mut(depth)
+            {
+                p.copy_from_slice(&col);
+            }
+        }
+    }
+
     pub fn rect(&mut self, r: Rect, col: Color) {
         let x0 = r.x.max(0.0).min(self.width as f32) as usize;
         let x1 = (r.x + r.w).max(0.0).min(self.width as f32) as usize;

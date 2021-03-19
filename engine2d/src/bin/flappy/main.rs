@@ -5,6 +5,7 @@ use std::rc::Rc;
 use std::time::{Duration, Instant};
 
 use pixels::{Pixels, SurfaceTexture};
+use rand::prelude::*;
 use rodio::{OutputStreamHandle, Source};
 use winit::dpi::LogicalSize;
 use winit::event::{Event, VirtualKeyCode};
@@ -60,6 +61,7 @@ pub struct Resources {
 }
 
 struct ObstacleData {
+    filled: bool,
     passed: bool,
 }
 
@@ -92,6 +94,7 @@ fn main() {
         mode: Mode::Title,
         last_flap_noise: Instant::now(),
     };
+    let mut rng = thread_rng();
 
     let (_stream, stream_handle) = rodio::OutputStream::try_default().unwrap();
 
@@ -197,8 +200,12 @@ fn main() {
                     screen.draw_sprite(&state.player_sprite);
 
                     // draw state.obstacles
-                    for obstacle in state.obstacles.iter() {
-                        screen.rect(*obstacle, [255, 0, 0, 255]);
+                    for (obstacle, data) in state.obstacles.iter().zip(state.obstacle_data.iter()) {
+                        if data.filled {
+                            screen.rect(*obstacle, [255, 0, 0, 255]);
+                        } else {
+                            screen.rect_lines(*obstacle, [255, 0, 0, 255]);
+                        }
                     }
 
                     screen.draw_text_at_pos(
@@ -298,8 +305,14 @@ fn main() {
                             20.0,
                             bottom as f32,
                         ));
-                        state.obstacle_data.push(ObstacleData { passed: false });
-                        state.obstacle_data.push(ObstacleData { passed: false });
+                        state.obstacle_data.push(ObstacleData {
+                            passed: false,
+                            filled: rng.gen_bool(0.8),
+                        });
+                        state.obstacle_data.push(ObstacleData {
+                            passed: false,
+                            filled: rng.gen_bool(0.8),
+                        });
                         last_added_rect = Instant::now();
                         since = Instant::now();
                     }
