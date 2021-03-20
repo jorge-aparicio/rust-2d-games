@@ -10,15 +10,15 @@ use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper; //, PlayError};
 
-mod generation;
+mod responsetree;
 
 use engine2d::{animation, collision, input, objects::*, screen, sprite, text, texture};
 
 use std::time::{Duration, Instant};
 
 const DT: f64 = 1.0 / 60.0;
-const WIDTH: usize = 480;
-const HEIGHT: usize = 360;
+const WIDTH: usize = 1280;
+const HEIGHT: usize = 720;
 const DEPTH: usize = 4;
 const CHAR_SIZE: f32 = 16.0;
 
@@ -30,12 +30,14 @@ enum Mode {
     EndGame,
 }
 
+use responsetree::*;
 struct GameState {
     // add tree struct that will represent game text and options
-
-    // position in tree
+    tree_head: ListTreeNode,
 
     // ending determiner
+    ending_score: i16,
+
     text_info: text::TextInfo,
     mode: Mode,
 }
@@ -85,11 +87,13 @@ fn main() {
         ('8', Rect::new(128.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
         ('9', Rect::new(144.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
     ];
+
+ 
     let mut state = GameState {
-        // add tree struct that will represent game text and options
-
+        // add tree struct that will represent game text and options. empty until text parser implemented
+        tree_head: ListTreeNode::new(String::from(" ") , TextType::Message,  vec![]),
         // position in tree
-
+        ending_score: 0,
         // ending determiner
         text_info: {
             use std::path::Path;
@@ -125,9 +129,7 @@ fn main() {
 
     let event_loop = EventLoop::new();
     let mut input_events = WinitInputHelper::new();
-    
 
-    let mut input = input::Input::new();
 
     let window = {
         let size = LogicalSize::new(WIDTH as f64, HEIGHT as f64);
@@ -145,9 +147,6 @@ fn main() {
         Pixels::new(WIDTH as u32, HEIGHT as u32, surface_texture).unwrap()
     };
 
-    let mut last_added_rect = Instant::now();
-    let mut available_time = 0.0;
-    let mut since = Instant::now();
 
     event_loop.run(move |event, _, control_flow| {
         match state.mode {
@@ -160,13 +159,13 @@ fn main() {
                     use crate::text::DrawTextExt;
                     
                     screen.draw_text_at_pos(
-                        "The Whale Games",
-                        Vec2::new(20.0, 60.0),
+                        "the whale games",
+                        Vec2::new(500.0, 160.0),
                         &state.text_info,
                     );
                     screen.draw_text_at_pos(
-                        "Press ENTER to start.",
-                        Vec2::new(40.0, 240.0),
+                        "press enter to start.",
+                        Vec2::new(460.0, 440.0),
                         &state.text_info,
                     );
                     screen.draw_text_at_pos("", Vec2::new(65.0, 260.0), &state.text_info);
@@ -186,7 +185,7 @@ fn main() {
                         return;
                     }
                     if input_events.key_pressed(VirtualKeyCode::Return) {
-                        state.mode = Mode::Play;
+                        state.mode = Mode::Read;
                         //return;
                     }
 
@@ -200,8 +199,9 @@ fn main() {
                 // Draw the current frame
                 if let Event::RedrawRequested(_) = event {
                     let mut screen = screen::Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH);
-                    screen.clear([0, 0, 0, 255]);
+                    screen.clear([135, 206, 250, 150]);
 
+                    
                     //TODO render background, text box, text, character
 
                     
