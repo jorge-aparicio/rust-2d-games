@@ -44,6 +44,48 @@ impl<'fb> Screen<'fb> {
         }
     }
 
+    pub fn rect_lines(&mut self, r: Rect, col: Color) {
+        let x0 = r.x.max(0.0).min(self.width as f32) as usize;
+        let x1 = (r.x + r.w).max(0.0).min(self.width as f32) as usize;
+        let y0 = r.y.max(0.0).min(self.height as f32) as usize;
+        let y1 = (r.y + r.h).max(0.0).min(self.height as f32) as usize;
+        let depth = self.depth;
+        let pitch = self.width * depth;
+
+        // vertical lines
+        if r.x > 0.0 {
+            let x0 = x0.min(self.width - 1);
+            for row in y0..y1 {
+                let pixel_idx = row * pitch + x0 * depth;
+                self.framebuffer[pixel_idx..pixel_idx + depth].copy_from_slice(&col);
+            }
+        }
+        if r.x + r.w < self.width as f32 {
+            let x1 = x1.min(self.width - 1);
+            for row in y0..y1 {
+                let pixel_idx = row * pitch + x1 * depth;
+                self.framebuffer[pixel_idx..pixel_idx + depth].copy_from_slice(&col);
+            }
+        }
+
+        if r.y > 0.0 {
+            let y0 = y0.min(self.height - 1);
+            for p in self.framebuffer[y0 * pitch + x0 * depth..y0 * pitch + x1 * depth]
+                .chunks_exact_mut(depth)
+            {
+                p.copy_from_slice(&col);
+            }
+        }
+        if r.y + r.h < self.height as f32 {
+            let y1 = y1.min(self.height - 1);
+            for p in self.framebuffer[y1 * pitch + x0 * depth..y1 * pitch + x1 * depth]
+                .chunks_exact_mut(depth)
+            {
+                p.copy_from_slice(&col);
+            }
+        }
+    }
+
     pub fn rect(&mut self, r: Rect, col: Color) {
         let x0 = r.x.max(0.0).min(self.width as f32) as usize;
         let x1 = (r.x + r.w).max(0.0).min(self.width as f32) as usize;
@@ -71,6 +113,7 @@ impl<'fb> Screen<'fb> {
         let height = self.height as f32;
         let depth = self.depth;
         let pitch = self.width * depth;
+        #[allow(clippy::all)]
         while x != x1 || y != y1 {
             // We couldn't just clamp x0/y0 and x1/y1 into bounds, because then
             // we might change the slope of the line.
@@ -94,12 +137,19 @@ impl<'fb> Screen<'fb> {
             }
         }
     }
+
     pub fn bitblt(&mut self, src: &Texture, from: Rect, Vec2 { x: to_x, y: to_y }: Vec2) {
-        assert!(src.valid_frame(from));
-        if (to_x + from.w) < 0.0
-            || (self.width as f32) <= to_x
-            || (to_y + from.h) < 0.0
-            || (self.height as f32) <= to_y
+        let (tw, th) = src.size();
+        assert!(0.0 <= from.x);
+        assert!(from.x < tw as f32);
+        assert!(0.0 <= from.y);
+        assert!(from.y < th as f32);
+        let to_x = to_x as i32;
+        let to_y = to_y as i32;
+        if (to_x + from.w as i32) < 0
+            || (self.width as i32) <= to_x
+            || (to_y + from.h as i32) < 0
+            || (self.height as i32) <= to_y
         {
             return;
         }
@@ -110,39 +160,25 @@ impl<'fb> Screen<'fb> {
         // All this rigmarole is just to avoid bounds checks on each pixel of the blit.
         // We want to calculate which row/col of the src image to start at and which to end at.
         // This way there's no need to even check for out of bounds draws.
-        let y_skip = to_y.max(0.0) - to_y;
-        let x_skip = to_x.max(0.0) - to_x;
-        let y_count = (to_y + from.h).min(self.height as f32) - to_y;
-        let x_count = (to_x + from.w).min(self.width as f32) - to_x;
-        // The code above is gnarly so these are just for safety:
-        debug_assert!(0.0 <= x_skip);
-        debug_assert!(0.0 <= y_skip);
-        debug_assert!(0.0 <= x_count);
-        debug_assert!(0.0 <= y_count);
-        debug_assert!(x_count <= from.w);
-        debug_assert!(y_count <= from.h);
-        debug_assert!(0.0 <= to_x + x_skip);
-        debug_assert!(0.0 <= to_y + y_skip);
-        debug_assert!(0.0 <= from.x + x_skip);
-        debug_assert!(0.0 <= from.y + y_skip);
-        debug_assert!(to_x + x_count <= self.width as f32);
-        debug_assert!(to_y + y_count <= self.height as f32);
-        // OK, let's do some copying now
+        let y_skip = to_y.max(0) - to_y;
+        let x_skip = to_x.max(0) - to_x;
+        let y_count = (to_y + from.h as i32).min(self.height as i32) - to_y;
+        let x_count = (to_x + from.w as i32).min(self.width as i32) - to_x;
         let src_buf = src.buffer();
-        for (row_a, row_b) in src_buf
-            [(src_pitch * (from.y + y_skip) as usize)..(src_pitch * (from.y + y_count) as usize)]
+        for (row_a, row_b) in src_buf[(src_pitch * ((from.y as i32 + y_skip) as usize))
+            ..(src_pitch * ((from.y as i32 + y_count) as usize))]
             .chunks_exact(src_pitch)
             .zip(
-                self.framebuffer[(dst_pitch * (to_y + y_skip) as usize)
-                    ..(dst_pitch * (to_y + y_count) as usize)]
+                self.framebuffer[(dst_pitch * ((to_y + y_skip) as usize))
+                    ..(dst_pitch * ((to_y + y_count) as usize))]
                     .chunks_exact_mut(dst_pitch),
             )
         {
             let to_cols = row_b
                 [(depth * (to_x + x_skip) as usize)..(depth * (to_x + x_count) as usize)]
                 .chunks_exact_mut(depth);
-            let from_cols = row_a
-                [(depth * (from.x + x_skip) as usize)..(depth * (from.x + x_count) as usize)]
+            let from_cols = row_a[(depth * (from.x as i32 + x_skip) as usize)
+                ..(depth * (from.x as i32 + x_count) as usize)]
                 .chunks_exact(depth);
             // Composite over, assume premultiplied rgba8888
             for (to, from) in to_cols.zip(from_cols) {
