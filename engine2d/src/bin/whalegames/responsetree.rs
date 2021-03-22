@@ -16,32 +16,28 @@ pub struct ListTreeNode {
 impl ListTreeNode {
     pub fn new(
         message: String,
-        text_index: usize,
         responses: Vec<String>,
-        response_index: usize,
         children: Vec<ListTreeNode>,
     ) -> Self {
         Self {
             message: message,
-            text_index: text_index,
+            text_index: 0,
             responses: responses,
-            response_index: response_index,
+            response_index: 0,
             children: children,
         }
     }
     pub fn add(
         &mut self,
         message: String,
-        text_index: usize,
         responses: Vec<String>,
-        response_index: usize,
         children: Vec<ListTreeNode>,
     ) {
         self.children.push(ListTreeNode {
             message: message,
-            text_index: text_index,
+            text_index: 0,
             responses: responses,
-            response_index: response_index,
+            response_index: 0,
             children: children,
         })
     }
