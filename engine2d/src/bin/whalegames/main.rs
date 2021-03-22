@@ -1,3 +1,4 @@
+use std::cmp;
 use std::fs::File;
 use std::io::BufReader;
 use std::rc::Rc;
@@ -11,16 +12,20 @@ use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper; //, PlayError};
 
 mod responsetree;
-
-use engine2d::{animation, collision, input, objects::*, screen, sprite, text, texture};
-
-use std::time::{Duration, Instant};
+use crate::text::DrawTextExt;
+use engine2d::{objects::*, screen, text, texture};
+use substring::Substring;
 
 const DT: f64 = 1.0 / 60.0;
 const WIDTH: usize = 1280;
 const HEIGHT: usize = 720;
 const DEPTH: usize = 4;
 const CHAR_SIZE: f32 = 16.0;
+const BOX_COLOR: Color = [255, 255, 255, 255];
+const BOX_X: f32 = WIDTH as f32 / 10.0;
+const BOX_Y: f32 = 6.0 * HEIGHT as f32 / 11.0;
+const BOX_WIDTH: f32 = 8.0 * WIDTH as f32 / 10.0;
+const BOX_HEIGHT: f32 = 4.0 * HEIGHT as f32 / 10.0;
 
 #[derive(Debug)]
 enum Mode {
@@ -34,16 +39,12 @@ use responsetree::*;
 struct GameState {
     // add tree struct that will represent game text and options
     tree_head: ListTreeNode,
-
+    box_read: bool,
     // ending determiner
-    ending_score: i16,
-
+    //ending_score: i16,
     text_info: text::TextInfo,
     mode: Mode,
 }
-
-
-
 
 fn main() {
     let info = [
@@ -88,12 +89,13 @@ fn main() {
         ('9', Rect::new(144.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
     ];
 
- 
+    let text_box: Rect = Rect::new(BOX_X, BOX_Y, BOX_WIDTH, BOX_HEIGHT);
     let mut state = GameState {
         // add tree struct that will represent game text and options. empty until text parser implemented
-        tree_head: ListTreeNode::new(String::from(" ") , TextType::Message,  vec![]),
+        tree_head: ListTreeNode::new(String::from("this is a test string this is a test string this is a test string this is a test string"),0, vec![String::from(" choice 1"),String::from(" choice 2"),String::from(" choice 3")] ,0, vec![]),
+        box_read: false,
         // position in tree
-        ending_score: 0,
+        //ending_score: 0,
         // ending determiner
         text_info: {
             use std::path::Path;
@@ -130,7 +132,6 @@ fn main() {
     let event_loop = EventLoop::new();
     let mut input_events = WinitInputHelper::new();
 
-
     let window = {
         let size = LogicalSize::new(WIDTH as f64, HEIGHT as f64);
         WindowBuilder::new()
@@ -147,7 +148,6 @@ fn main() {
         Pixels::new(WIDTH as u32, HEIGHT as u32, surface_texture).unwrap()
     };
 
-
     event_loop.run(move |event, _, control_flow| {
         match state.mode {
             Mode::Title => {
@@ -156,8 +156,6 @@ fn main() {
                     let mut screen = screen::Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH);
                     screen.clear([135, 206, 250, 150]);
 
-                    use crate::text::DrawTextExt;
-                    
                     screen.draw_text_at_pos(
                         "the whale games",
                         Vec2::new(500.0, 160.0),
@@ -197,69 +195,150 @@ fn main() {
             }
             Mode::Read => {
                 // Draw the current frame
+                let mut end_line_index: usize;
+                let mut start_line_index: usize = if state.box_read {state.tree_head.text_index} else{0};
                 if let Event::RedrawRequested(_) = event {
                     let mut screen = screen::Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH);
                     screen.clear([135, 206, 250, 150]);
 
-                    
-                    //TODO render background, text box, text, character
+                    //render text box
+                    screen.rect(text_box, BOX_COLOR);
+                    screen.rect_lines(text_box, [0, 0, 0, 0]);
 
-                    
+                    // render text in box as many characters that will fit per line for now
+                    for i in 1..(BOX_HEIGHT / (CHAR_SIZE)) as usize {
+                        end_line_index = cmp::min(
+                            start_line_index + ((BOX_WIDTH / CHAR_SIZE) - 1.0) as usize,
+                            state.tree_head.message.len(),
+                        );
+                        screen.draw_text_at_pos(
+                            state
+                                .tree_head
+                                .message
+                                .substring(start_line_index, end_line_index),
+                            Vec2::new(BOX_X + 12.0, BOX_Y + (CHAR_SIZE * i as f32) + 4.0),
+                            &state.text_info,
+                        );
+                        start_line_index = end_line_index;
+                       
+
+                    }
+                    state.tree_head.text_index = start_line_index;
+
+                    //println!(" start index: {}",start_line_index);
                     if pixels.render().is_err() {
                         *control_flow = ControlFlow::Exit;
                         return;
                     }
-
                 }
-
+                
                 // TODO update position in tree
 
-                // wait for player input
-                loop {
-                    // Handle input_events events
+                // Handle input_events events
                 if input_events.update(&event) {
                     // Close events
+                    
                     if input_events.key_pressed(VirtualKeyCode::Escape) || input_events.quit() {
                         *control_flow = ControlFlow::Exit;
                         return;
                     }
 
                     if input_events.key_pressed(VirtualKeyCode::Space) || input_events.quit() {
-                        // TODO based on next value in tree remain in read mode or switch to respond mode
+                        state.box_read = true;
+                        if !state.tree_head.responses.is_empty() {
+                            // if player has read all text and has option to give response switch to response mode
+                            println!(" responses not empty, start index: {}, message length: {}",start_line_index,state.tree_head.message.len() );
+                            if state.tree_head.text_index >= state.tree_head.message.len()-1 {
+                                state.mode = Mode::Respond;
+                                println!("respond");
+                            }
+                        } else {
+                            // if player reached end of tree and no final response available switch to game over
+                            if state.tree_head.children.is_empty() {
+                                state.mode = Mode::EndGame;
+                            } else {
+                                // if no response option available go forward in tree
+                                state.tree_head.next(0);
+                            }
+                        }
+
+                        // update location of last text player seen
+                        
                         return;
                     }
-                }
 
                     // Resize the window
                     if let Some(size) = input_events.window_resized() {
                         pixels.resize(size.width, size.height);
                     }
                 }
-
-                
             }
 
             Mode::Respond => {
                 // Draw the current frame
+
                 if let Event::RedrawRequested(_) = event {
                     let mut screen = screen::Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH);
-                    screen.clear([0, 0, 0, 255]);
+                    screen.clear([135, 206, 250, 150]);
+
+                    //render text box
+                    screen.rect(text_box, BOX_COLOR);
+                    screen.rect_lines(text_box, [0, 0, 0, 0]);
+
+                    // vec of response y values for pointer to know location
+                    let mut ypos_vec: Vec<(f32,usize)> = vec![];         
+
+                    for (i, response) in state.tree_head.responses.iter().enumerate() {
+                        // render text in box as many characters that will fit per line for now
+                        let mut end_line_index: usize;
+                        let mut start_line_index: usize = 0;
+                        let mut num_lines =0;
+                        
+                        for j in 1..(BOX_HEIGHT / (CHAR_SIZE)) as usize {
+                            end_line_index = cmp::min(
+                                start_line_index + ((BOX_WIDTH / CHAR_SIZE) - 1.0) as usize,
+                                state.tree_head.message.len() - 1,
+                            );
+                            screen.draw_text_at_pos(
+                                response.substring(start_line_index, end_line_index),
+                                Vec2::new(
+                                    BOX_X + 3.0*BOX_WIDTH/64.0,
+                                    BOX_Y + (CHAR_SIZE * i as f32) + (CHAR_SIZE * j as f32),
+                                ),
+                                &state.text_info,
+                            );
+                            start_line_index = end_line_index;
+                        }
+                        ypos_vec.push((BOX_Y + (CHAR_SIZE * i as f32),num_lines));
+                    }
+
+                    
+                    let pointer = Rect{
+                        x: BOX_X + 1.0*BOX_WIDTH/64.0,
+                        y: {
+                            let (init_y, i) = ypos_vec[state.tree_head.response_index];
+                            init_y + (i as f32+1.0)*CHAR_SIZE
+                        },
+                        h: 8.0,
+                        w: 8.0,
+
+                    };
+                    screen.rect(pointer, [255,0,0,255]);
+
 
                     //TODO render background, text box, character, response pointer
 
-                    
                     if pixels.render().is_err() {
                         *control_flow = ControlFlow::Exit;
                         return;
                     }
-
                 }
 
                 //TODO update position in tree
 
                 // wait for player input
-                loop {
-                    // Handle input_events events
+
+                // Handle input_events events
                 if input_events.update(&event) {
                     // Close events
                     if input_events.key_pressed(VirtualKeyCode::Escape) || input_events.quit() {
@@ -269,42 +348,45 @@ fn main() {
 
                     if input_events.key_pressed(VirtualKeyCode::Down) || input_events.quit() {
                         //TODO change response option
+                        if state.tree_head.response_index < state.tree_head.responses.len()-1{
+                            state.tree_head.response_index +=1;
+                        }
+                        else{
+                            state.tree_head.response_index =0;
+                        }
                         return;
                     }
 
                     if input_events.key_pressed(VirtualKeyCode::Up) || input_events.quit() {
-                        //TODO change response option
+                        if state.tree_head.response_index > 0{
+                            state.tree_head.response_index -=1;
+                        }
+                        else{
+                            state.tree_head.response_index =state.tree_head.responses.len()-1;
+                        }
                         return;
                     }
 
                     if input_events.key_pressed(VirtualKeyCode::Space) || input_events.quit() {
-                        //TODO based on next value in tree remain in read mode or switch to respond mode
+                        //move to next value in tree based on response.
+                        state.tree_head.next(state.tree_head.response_index);
+                        state.mode = Mode::Read;
                         return;
                     }
-                }
 
                     // Resize the window
                     if let Some(size) = input_events.window_resized() {
                         pixels.resize(size.width, size.height);
                     }
                 }
-
-                
             }
-
 
             Mode::EndGame => {
                 if let Event::RedrawRequested(_) = event {
                     let mut screen = screen::Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH);
                     screen.clear([200, 0, 0, 150]);
 
-                    use crate::text::DrawTextExt;
-
-                    screen.draw_text_at_pos(
-                        "The End",
-                        Vec2::new(20.0, 60.0),
-                        &state.text_info,
-                    );
+                    screen.draw_text_at_pos("The End", Vec2::new(20.0, 60.0), &state.text_info);
 
                     screen.draw_text_at_pos(
                         "press enter to return to title screen",
@@ -329,7 +411,6 @@ fn main() {
                         return;
                     }
                     if input_events.key_pressed(VirtualKeyCode::Return) {
-
                         // reset gamemode tree position
                         state.mode = Mode::Title;
                         //return;

@@ -1,35 +1,61 @@
-
-pub enum TextType{
-    Message,
-    Response(i16)
-}
+/* A tree structure for the whale games. Each tree node is composed of a message the player can read, a list of responses from which the player can make a decision,
+and the children representing the different pathways in the story the player can take based on their reponses.*/
+#[derive(Clone, PartialEq)]
 pub struct ListTreeNode {
-    pub text: String,
-    pub text_type: TextType, 
+    pub message: String,
+    pub text_index: usize,
+    // response index should correspond with child index
+    pub responses: Vec<String>,
+
+    // current selected response by user
+    pub response_index: usize,
+    //pub child_type: TextType,
     pub children: Vec<ListTreeNode>,
 }
 
-
-
 impl ListTreeNode {
-    pub fn new(text: String, text_type: TextType, children: Vec<ListTreeNode>)-> Self{
-        Self{
-            text: text,
-            text_type: text_type,
+    pub fn new(
+        message: String,
+        text_index: usize,
+        responses: Vec<String>,
+        response_index: usize,
+        children: Vec<ListTreeNode>,
+    ) -> Self {
+        Self {
+            message: message,
+            text_index: text_index,
+            responses: responses,
+            response_index: response_index,
             children: children,
         }
     }
-    pub fn add(&mut self, text: String, text_type: TextType, children: Vec<ListTreeNode>){
-        self.children.push(ListTreeNode{
-            text: text,
-            text_type: text_type,
+    pub fn add(
+        &mut self,
+        message: String,
+        text_index: usize,
+        responses: Vec<String>,
+        response_index: usize,
+        children: Vec<ListTreeNode>,
+    ) {
+        self.children.push(ListTreeNode {
+            message: message,
+            text_index: text_index,
+            responses: responses,
+            response_index: response_index,
             children: children,
         })
     }
+    pub fn next(&mut self, index: usize) {
+        self.message = self.children[index].message.clone();
+        self.text_index = 0;
+        self.responses = self.children[index].responses.clone();
+        self.response_index = 0;
+        self.children = self.children[index].children.clone();
+    }
+}
 
-    
-
-
-
-
+pub struct Pointer {
+    pub x: f32,
+    pub y: f32,
+    pub size: f32,
 }
