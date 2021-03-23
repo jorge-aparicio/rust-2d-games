@@ -97,7 +97,7 @@ fn main() {
     let text_box: Rect = Rect::new(BOX_X, BOX_Y, BOX_WIDTH, BOX_HEIGHT);
     let mut state = GameState {
         // add tree struct that will represent game text and options. empty until text parser implemented
-        tree_head: ListTreeNode::new(String::from("this is a test string this is a test string this is a test string this is a test string"), vec![String::from(" choice 1"),String::from(" choice 2"),String::from(" choice 3")] , vec![test_child1,test_child2,test_child3]),
+        tree_head: ListTreeNode::new(String::from("this is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test stringthis is a test string this is a test string this is a test string this is a test string"), vec![String::from("choice 1 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),String::from("choice 2"),String::from("choice 3")] , vec![test_child1,test_child2,test_child3]),
         box_read: false,
         box_text_index: 0,
         // position in tree
@@ -202,7 +202,7 @@ fn main() {
             Mode::Read => {
                 // Draw the current frame
                 let mut end_line_index: usize;
-                let mut start_line_index: usize = if state.box_read {state.tree_head.text_index} else{state.box_text_index};
+                let mut start_line_index: usize = state.box_text_index;
                 if let Event::RedrawRequested(_) = event {
                     let mut screen = screen::Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH);
                     screen.clear([135, 206, 250, 150]);
@@ -212,7 +212,7 @@ fn main() {
                     screen.rect_lines(text_box, [0, 0, 0, 0]);
 
                     // render text in box as many characters that will fit per line for now
-                    for i in 1..(BOX_HEIGHT / (CHAR_SIZE)) as usize {
+                    for i in 1..(BOX_HEIGHT / (CHAR_SIZE + 1.0))  as usize {
                         end_line_index = cmp::min(
                             start_line_index + ((BOX_WIDTH / CHAR_SIZE) - 1.0) as usize,
                             state.tree_head.message.len(),
@@ -222,7 +222,7 @@ fn main() {
                                 .tree_head
                                 .message
                                 .substring(start_line_index, end_line_index),
-                            Vec2::new(BOX_X + 12.0, BOX_Y + (CHAR_SIZE * i as f32) + 4.0),
+                            Vec2::new(BOX_X + 10.0, BOX_Y + ((CHAR_SIZE) * i as f32)),
                             &state.text_info,
                         );
                         start_line_index = end_line_index;
@@ -250,7 +250,7 @@ fn main() {
                     }
 
                     if input_events.key_pressed(VirtualKeyCode::Space) || input_events.quit() {
-                        state.box_read = true;
+                        
                         state.box_text_index = state.tree_head.text_index;
                         if !state.tree_head.responses.is_empty() {
                             // if player has read all text and has option to give response switch to response mode
@@ -295,31 +295,31 @@ fn main() {
                     screen.rect_lines(text_box, [0, 0, 0, 0]);
 
                     // vec of response y values for pointer to know location
-                    let mut ypos_vec: Vec<(f32,usize)> = vec![];         
+                    let mut ypos_vec: Vec<(f32,f32)> = vec![];         
 
                     //render responses
                     for (i, response) in state.tree_head.responses.iter().enumerate() {
                         // render text in box as many characters that will fit per line for now
                         let mut end_line_index: usize;
                         let mut start_line_index: usize = 0;
-                        let mut num_lines =0;
                         
-                        for j in 1..(BOX_HEIGHT / (CHAR_SIZE)) as usize {
+                        for j in 1..(BOX_HEIGHT/ (CHAR_SIZE))   as usize {
                             end_line_index = cmp::min(
-                                start_line_index + ((BOX_WIDTH / CHAR_SIZE) - 1.0) as usize,
+                                start_line_index + (((BOX_WIDTH - 3.0*BOX_WIDTH/64.0) / CHAR_SIZE) - 1.0) as usize,
                                 state.tree_head.message.len() - 1,
                             );
                             screen.draw_text_at_pos(
                                 response.substring(start_line_index, end_line_index),
                                 Vec2::new(
                                     BOX_X + 3.0*BOX_WIDTH/64.0,
-                                    BOX_Y + (CHAR_SIZE * i as f32) + (CHAR_SIZE * j as f32),
+                                    BOX_Y + ((CHAR_SIZE*2.0) * i as f32) + (CHAR_SIZE * j as f32),
                                 ),
                                 &state.text_info,
                             );
                             start_line_index = end_line_index;
                         }
-                        ypos_vec.push((BOX_Y + (CHAR_SIZE * i as f32),num_lines));
+                        ypos_vec.push((BOX_Y + ((CHAR_SIZE*2.0) * i as f32),(response.len() as f32/(((BOX_WIDTH - 3.0*BOX_WIDTH/64.0) / CHAR_SIZE) - 1.0)) ));
+                        
                     }
 
                     // response pointer
@@ -327,7 +327,8 @@ fn main() {
                         x: BOX_X + 1.0*BOX_WIDTH/64.0,
                         y: {
                             let (init_y, i) = ypos_vec[state.tree_head.response_index];
-                            init_y + (i as f32+1.0)*CHAR_SIZE
+                            println!("{}",i);
+                            init_y + (i)*CHAR_SIZE
                         },
                         h: 8.0,
                         w: 8.0,
