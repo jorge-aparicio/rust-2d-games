@@ -156,6 +156,8 @@ fn main() {
                         Vec2::new(20.0, 60.0),
                         &rsrc.text_info,
                     );
+                    screen.draw_text_at_pos("press space", Vec2::new(40.0, 190.0), &rsrc.text_info);
+                    screen.draw_text_at_pos("to flap", Vec2::new(73.0, 210.0), &rsrc.text_info);
                     screen.draw_text_at_pos("press enter", Vec2::new(40.0, 240.0), &rsrc.text_info);
                     screen.draw_text_at_pos("to start", Vec2::new(65.0, 260.0), &rsrc.text_info);
 
@@ -347,7 +349,7 @@ fn main() {
             Mode::EndGame => {
                 if let Event::RedrawRequested(_) = event {
                     let mut screen = Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH);
-                    screen.clear([200, 0, 0, 150]);
+                    screen.clear([255, 150, 0, 255]);
 
                     screen.draw_text_at_pos(
                         format!("score: {}", state.score).as_str(),
@@ -462,7 +464,7 @@ impl Resources {
                 Rc::new(Texture::with_file(Path::new("content/buildings.png"))),
             ],
             text_info: {
-                let image = Rc::new(Texture::with_file(Path::new("content/ascii.png")));
+                let image = Rc::new(Texture::with_file(Path::new("content/ascii-dark.png")));
                 let info = [
                     (' ', Rect::new(0.0, 0.0, CHAR_SIZE, CHAR_SIZE)),
                     ('!', Rect::new(16.0, 0.0, CHAR_SIZE, CHAR_SIZE)),

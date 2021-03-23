@@ -14,31 +14,22 @@ pub struct ListTreeNode {
 }
 
 impl ListTreeNode {
-    pub fn new(
-        message: String,
-        responses: Vec<String>,
-        children: Vec<ListTreeNode>,
-    ) -> Self {
+    pub fn new(message: String, responses: Vec<String>, children: Vec<ListTreeNode>) -> Self {
         Self {
-            message: message,
+            message,
             text_index: 0,
-            responses: responses,
+            responses,
             response_index: 0,
-            children: children,
+            children,
         }
     }
-    pub fn add(
-        &mut self,
-        message: String,
-        responses: Vec<String>,
-        children: Vec<ListTreeNode>,
-    ) {
+    pub fn add(&mut self, message: String, responses: Vec<String>, children: Vec<ListTreeNode>) {
         self.children.push(ListTreeNode {
-            message: message,
+            message,
             text_index: 0,
-            responses: responses,
+            responses,
             response_index: 0,
-            children: children,
+            children,
         })
     }
     pub fn next(&mut self, index: usize) {
