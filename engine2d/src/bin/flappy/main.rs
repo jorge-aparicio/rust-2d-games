@@ -44,6 +44,7 @@ enum Mode {
 struct GameState {
     player: MovingRect,
     player_sprite: Sprite,
+    holding: Holding,
     obstacles: Vec<Rect>,
     obstacle_data: Vec<ObstacleData>,
     move_vel: f32,
@@ -70,6 +71,56 @@ enum ActionID {
     Flap,
 }
 
+enum Holding {
+    Worm(Sprite),
+    Flower(Sprite),
+    Letter(Sprite),
+}
+
+impl Holding {
+    fn random(rsrc: &Resources) -> Self {
+        let mut rng = thread_rng();
+        match rng.gen_range(0..3) {
+            0 => Self::Flower(Sprite::new(
+                &Rc::clone(&rsrc.textures[0]),
+                Animation::new(&rsrc.animation_data[7]),
+                Vec2::new(45.0, HEIGHT as f32 / 2.0 - 10.0),
+            )),
+            1 => Self::Worm(Sprite::new(
+                &Rc::clone(&rsrc.textures[0]),
+                Animation::new(&rsrc.animation_data[8]),
+                Vec2::new(47.0, HEIGHT as f32 / 2.0 - 9.0),
+            )),
+            2 => Self::Letter(Sprite::new(
+                &Rc::clone(&rsrc.textures[0]),
+                Animation::new(&rsrc.animation_data[9]),
+                Vec2::new(46.0, HEIGHT as f32 / 2.0 - 9.0),
+            )),
+            _ => panic!("unreachable"),
+        }
+    }
+
+    fn get_sprite(&self) -> &Sprite {
+        match self {
+            Self::Flower(sprite) => sprite,
+            Self::Letter(sprite) => sprite,
+            Self::Worm(sprite) => sprite,
+        }
+    }
+
+    fn get_sprite_mut(&mut self) -> &mut Sprite {
+        match self {
+            Self::Flower(sprite) => sprite,
+            Self::Letter(sprite) => sprite,
+            Self::Worm(sprite) => sprite,
+        }
+    }
+
+    fn draw(&self, screen: &mut Screen) {
+        screen.draw_sprite(self.get_sprite());
+    }
+}
+
 fn main() {
     let rsrc = Resources::new();
     let mut state = GameState {
@@ -85,6 +136,7 @@ fn main() {
             Animation::new(&rsrc.animation_data[0]),
             Vec2::new(30.0, HEIGHT as f32 / 2.0 - 10.0),
         ),
+        holding: Holding::random(&rsrc),
         background: Background::new(&rsrc),
         obstacles: Vec::new(),
         obstacle_data: Vec::new(),
@@ -97,6 +149,7 @@ fn main() {
     let mut rng = thread_rng();
 
     let (_stream, stream_handle) = rodio::OutputStream::try_default().unwrap();
+    play_coo(&stream_handle);
 
     let file = File::open("content/city-quiet.mp3").unwrap();
     let background = rodio::Decoder::new(BufReader::new(file))
@@ -106,7 +159,6 @@ fn main() {
         .repeat_infinite();
 
     let _ = stream_handle.play_raw(background.convert_samples());
-    play_coo(&stream_handle);
 
     let event_loop = EventLoop::new();
     let mut input_events = WinitInputHelper::new();
@@ -119,7 +171,7 @@ fn main() {
     input.add_key_to_map(ActionID::Flap, VirtualKeyCode::Space);
 
     let window = {
-        let size = LogicalSize::new(WIDTH as f64, HEIGHT as f64);
+        let size = LogicalSize::new(WIDTH as f64 * 2.0, HEIGHT as f64 * 2.0);
         WindowBuilder::new()
             .with_title("flappy bird")
             .with_inner_size(size)
@@ -156,6 +208,8 @@ fn main() {
                         Vec2::new(20.0, 60.0),
                         &rsrc.text_info,
                     );
+                    screen.draw_text_at_pos("press space", Vec2::new(40.0, 190.0), &rsrc.text_info);
+                    screen.draw_text_at_pos("to flap", Vec2::new(73.0, 210.0), &rsrc.text_info);
                     screen.draw_text_at_pos("press enter", Vec2::new(40.0, 240.0), &rsrc.text_info);
                     screen.draw_text_at_pos("to start", Vec2::new(65.0, 260.0), &rsrc.text_info);
 
@@ -198,6 +252,7 @@ fn main() {
                     state.background.draw(&mut screen);
 
                     screen.draw_sprite(&state.player_sprite);
+                    state.holding.draw(&mut screen);
 
                     // draw state.obstacles
                     for (obstacle, data) in state.obstacles.iter().zip(state.obstacle_data.iter()) {
@@ -267,6 +322,8 @@ fn main() {
                     state.player.y -= state.player.vel.y;
                     state.player_sprite.position.x -= state.player.vel.x;
                     state.player_sprite.position.y -= state.player.vel.y;
+                    state.holding.get_sprite_mut().position.x -= state.player.vel.x;
+                    state.holding.get_sprite_mut().position.y -= state.player.vel.y;
 
                     for obstacle in state.obstacles.iter_mut() {
                         obstacle.x -= state.move_vel;
@@ -347,7 +404,7 @@ fn main() {
             Mode::EndGame => {
                 if let Event::RedrawRequested(_) = event {
                     let mut screen = Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH);
-                    screen.clear([200, 0, 0, 150]);
+                    screen.clear([255, 150, 0, 255]);
 
                     screen.draw_text_at_pos(
                         format!("score: {}", state.score).as_str(),
@@ -390,6 +447,7 @@ fn main() {
                         state.time_between = 3000;
                         state.move_vel = 1.0;
                         state.score = 0;
+                        state.holding = Holding::random(&rsrc);
                         last_added_rect = Instant::now();
                         since = Instant::now();
                         //return;
@@ -425,10 +483,12 @@ impl Resources {
     fn new() -> Self {
         Self {
             animation_data: vec![
+                // bird glide (pigeon.png)
                 Rc::new(AnimationData {
                     frames: vec![(Rect::new(0.0, 0.0, 20.0, 17.0), 1)],
                     looping: false,
                 }),
+                // bird flap
                 Rc::new(AnimationData {
                     frames: vec![
                         (Rect::new(20.0, 0.0, 20.0, 17.0), 13),
@@ -436,24 +496,44 @@ impl Resources {
                     ],
                     looping: false,
                 }),
+                // building (buildings.png)
                 Rc::new(AnimationData {
                     frames: vec![(Rect::new(0.0, 56.0, 23.0, 82.0), 1)],
                     looping: false,
                 }),
+                // building
                 Rc::new(AnimationData {
                     frames: vec![(Rect::new(23.0, 21.0, 22.0, 117.0), 1)],
                     looping: false,
                 }),
+                // building
                 Rc::new(AnimationData {
                     frames: vec![(Rect::new(45.0, 79.0, 63.0, 58.0), 1)],
                     looping: false,
                 }),
+                // building
                 Rc::new(AnimationData {
                     frames: vec![(Rect::new(108.0, 0.0, 29.0, 138.0), 1)],
                     looping: false,
                 }),
+                // cloud
                 Rc::new(AnimationData {
                     frames: vec![(Rect::new(45.0, 0.0, 42.0, 29.0), 1)],
+                    looping: false,
+                }),
+                // flower (pigeon.png)
+                Rc::new(AnimationData {
+                    frames: vec![(Rect::new(0.0, 17.0, 8.0, 7.0), 1)],
+                    looping: false,
+                }),
+                // worm
+                Rc::new(AnimationData {
+                    frames: vec![(Rect::new(8.0, 17.0, 6.0, 5.0), 1)],
+                    looping: false,
+                }),
+                // letter
+                Rc::new(AnimationData {
+                    frames: vec![(Rect::new(14.0, 17.0, 9.0, 8.0), 1)],
                     looping: false,
                 }),
             ],
@@ -462,7 +542,7 @@ impl Resources {
                 Rc::new(Texture::with_file(Path::new("content/buildings.png"))),
             ],
             text_info: {
-                let image = Rc::new(Texture::with_file(Path::new("content/ascii.png")));
+                let image = Rc::new(Texture::with_file(Path::new("content/ascii-dark.png")));
                 let info = [
                     (' ', Rect::new(0.0, 0.0, CHAR_SIZE, CHAR_SIZE)),
                     ('!', Rect::new(16.0, 0.0, CHAR_SIZE, CHAR_SIZE)),
