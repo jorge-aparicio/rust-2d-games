@@ -11,8 +11,10 @@ use winit::event::{Event, VirtualKeyCode};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper; //, PlayError};
+use std::collections::HashMap;
 
 mod responsetree;
+mod storyparser;
 use crate::text::DrawTextExt;
 use engine2d::{objects::*, screen, text, texture};
 use substring::Substring;
@@ -37,15 +39,25 @@ enum Mode {
 }
 
 use responsetree::*;
+use storyparser::*;
 struct GameState {
-    // add tree struct that will represent game text and options
-    tree_head: ListTreeNode,
+    scene_map: HashMap<String, Scene>,
+    current_scene: Scene,
     box_read: bool,
+    message_index: usize,
     box_text_index: usize,
-    // ending determiner
-    //ending_score: i16,
+    response_index: usize,
     text_info: text::TextInfo,
     mode: Mode,
+}
+
+impl GameState {
+    pub fn reset_read_info(&mut self){
+        self.message_index = 0;
+        self.box_text_index = 0;
+        self.response_index = 0;
+        self.box_read = false;
+    }
 }
 
 fn main() {
@@ -90,29 +102,20 @@ fn main() {
         ('8', Rect::new(128.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
         ('9', Rect::new(144.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
     ];
-    let test_child1 = ListTreeNode::new(String::from("good choice."), vec![], vec![]);
-    let test_child2 = ListTreeNode::new(String::from("bad choice."), vec![], vec![]);
-    let test_child4 = ListTreeNode::new(String::from("okay choice."), vec![], vec![]);
-    let test_child3 = ListTreeNode::new(
-        String::from("interesting choice."),
-        vec![
-            String::from(" choice a"),
-            String::from(" choice b"),
-            String::from(" choice c"),
-        ],
-        vec![test_child1.clone(), test_child2.clone(), test_child4],
-    );
+    
 
     let text_box: Rect = Rect::new(BOX_X, BOX_Y, BOX_WIDTH, BOX_HEIGHT);
+
+    let scene_map = parse_story().unwrap();
+    let current_scene = scene_map.get("intro").unwrap();
     let mut state = GameState {
         // add tree struct that will represent game text and options. empty until text parser implemented
-        tree_head: ListTreeNode::new(
-            include_str!("test-string").to_string(), // the long string breaks my editor very badly
-            vec![String::from("choice 2"), String::from("choice 3")],
-            vec![test_child1, test_child2, test_child3],
-        ),
+        scene_map : scene_map.clone(),
+        current_scene: current_scene.clone(),
         box_read: false,
+        message_index: 0,
         box_text_index: 0,
+        response_index: 0,
         // position in tree
         //ending_score: 0,
         // ending determiner
@@ -230,11 +233,11 @@ fn main() {
                     for i in 1..(BOX_HEIGHT / (CHAR_SIZE + 1.0)) as usize {
                         end_line_index = cmp::min(
                             start_line_index + ((BOX_WIDTH / CHAR_SIZE) - 1.0) as usize,
-                            state.tree_head.message.len(),
+                            state.current_scene.message.len(),
                         );
                         screen.draw_text_at_pos(
                             state
-                                .tree_head
+                                .current_scene
                                 .message
                                 .substring(start_line_index, end_line_index),
                             Vec2::new(BOX_X + 10.0, BOX_Y + ((CHAR_SIZE) * i as f32)),
@@ -242,7 +245,7 @@ fn main() {
                         );
                         start_line_index = end_line_index;
                     }
-                    state.tree_head.text_index = start_line_index;
+                    state.message_index = start_line_index;
 
                     //println!(" start index: {}",start_line_index);
                     if pixels.render().is_err() {
@@ -263,27 +266,29 @@ fn main() {
                     }
 
                     if input_events.key_pressed(VirtualKeyCode::Space) || input_events.quit() {
-                        state.box_text_index = state.tree_head.text_index;
-                        if !state.tree_head.responses.is_empty() {
+                        state.box_text_index = state.message_index;
+                        if state.current_scene.responses.len() > 1 {
                             // if player has read all text and has option to give response switch to response mode
                             println!(
                                 " responses not empty, start index: {}, message length: {}",
                                 start_line_index,
-                                state.tree_head.message.len()
+                                state.current_scene.message.len()
                             );
-                            if state.tree_head.text_index >= state.tree_head.message.len() - 1 {
+                            if state.message_index >= state.current_scene.message.len() - 1 {
                                 state.mode = Mode::Respond;
                                 state.box_read = false;
                                 state.box_text_index = 0;
+                                state.message_index = 0;
                             }
                         } else {
                             // if player reached end of tree and no final response available switch to game over
-                            if state.tree_head.children.is_empty() {
+                            if state.current_scene.responses.is_empty() {
                                 state.mode = Mode::EndGame;
                             } else {
-                                // if no response option available go forward in tree
-                                state.tree_head.next(0);
-                                state.box_read = false;
+                                // if no response option available go forward in story
+                                state.current_scene = state.scene_map.get(&*(state.current_scene.responses[0].goto)).unwrap().clone();
+                                state.reset_read_info();
+
                             }
                         }
 
@@ -313,7 +318,7 @@ fn main() {
                     let mut ypos_vec: Vec<(f32, f32)> = vec![];
 
                     //render responses
-                    for (i, response) in state.tree_head.responses.iter().enumerate() {
+                    for (i, resp_map) in state.current_scene.responses.iter().enumerate() {
                         // render text in box as many characters that will fit per line for now
                         let mut end_line_index: usize;
                         let mut start_line_index: usize = 0;
@@ -323,10 +328,10 @@ fn main() {
                                 start_line_index
                                     + (((BOX_WIDTH - 3.0 * BOX_WIDTH / 64.0) / CHAR_SIZE) - 1.0)
                                         as usize,
-                                state.tree_head.message.len() - 1,
+                                resp_map.response.len() - 1,
                             );
                             screen.draw_text_at_pos(
-                                response.substring(start_line_index, end_line_index),
+                                resp_map.response.substring(start_line_index, end_line_index),
                                 Vec2::new(
                                     BOX_X + 3.0 * BOX_WIDTH / 64.0,
                                     BOX_Y + ((CHAR_SIZE * 2.0) * i as f32) + (CHAR_SIZE * j as f32),
@@ -337,7 +342,7 @@ fn main() {
                         }
                         ypos_vec.push((
                             BOX_Y + ((CHAR_SIZE * 2.0) * i as f32),
-                            (response.len() as f32
+                            (resp_map.response.len() as f32
                                 / (((BOX_WIDTH - 3.0 * BOX_WIDTH / 64.0) / CHAR_SIZE) - 1.0)),
                         ));
                     }
@@ -346,7 +351,7 @@ fn main() {
                     let pointer = Rect {
                         x: BOX_X + 1.0 * BOX_WIDTH / 64.0,
                         y: {
-                            let (init_y, i) = ypos_vec[state.tree_head.response_index];
+                            let (init_y, i) = ypos_vec[state.response_index];
                             println!("{}", i);
                             init_y + (i) * CHAR_SIZE
                         },
@@ -377,29 +382,30 @@ fn main() {
 
                     if input_events.key_pressed(VirtualKeyCode::Down) || input_events.quit() {
                         //TODO change response option
-                        if state.tree_head.response_index < state.tree_head.responses.len() - 1 {
-                            state.tree_head.response_index += 1;
+                        if state.response_index < state.current_scene.responses.len() - 1 {
+                            state.response_index += 1;
                         } else {
-                            state.tree_head.response_index = 0;
+                            state.response_index = 0;
                         }
                         return;
                     }
 
                     if input_events.key_pressed(VirtualKeyCode::Up) || input_events.quit() {
-                        if state.tree_head.response_index > 0 {
-                            state.tree_head.response_index -= 1;
+                        if state.response_index > 0 {
+                            state.response_index -= 1;
                         } else {
-                            state.tree_head.response_index = state.tree_head.responses.len() - 1;
+                            state.response_index = state.current_scene.responses.len() - 1;
                         }
                         return;
                     }
 
                     if input_events.key_pressed(VirtualKeyCode::Space) || input_events.quit() {
                         //move to next value in tree based on response.
-                        if state.tree_head.children.is_empty() {
+                        if state.current_scene.responses.is_empty() {
                             state.mode = Mode::EndGame;
                         } else {
-                            state.tree_head.next(state.tree_head.response_index);
+                            state.current_scene = state.scene_map.get(&*(state.current_scene.responses[0].goto)).unwrap().clone();
+                            state.reset_read_info();
                             state.mode = Mode::Read;
                         }
 

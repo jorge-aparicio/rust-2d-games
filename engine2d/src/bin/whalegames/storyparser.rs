@@ -1,30 +1,33 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Result;
-
+use std::collections::HashMap;
 
 
 #[derive(Serialize, Deserialize)]
-struct NamedScene {
-    scene_name: String,
-    scene: Scene,
+pub struct NamedScene {
+    pub scene_name: String,
+    pub scene: Scene,
 }
 
-#[derive(Serialize, Deserialize)]
-struct Scene {
-    name: String,
-    message: String,
-    response_message: String,
-    responses: Vec<Response>,
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Scene {
+    pub name: String,
+    pub message: String,
+    pub response_message: String,
+    pub responses: Vec<Response>,
 }
 
-#[derive(Serialize, Deserialize)]
-struct Response {
-    response: String, // ?????
-    goto: String,
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Response {
+    pub response: String, // ?????
+    pub goto: String,
 }
 
-fn typed_example() -> Result<()> {
+pub fn parse_story() -> Result<(HashMap<String, Scene>)> {
     // Some JSON input data as a &str. Maybe this comes from the user.
+
+
+    // TODO change to text reader to parse story from file
     let data = r#"{
     "scene_name": "intro", 
     "scene" :
@@ -50,14 +53,16 @@ fn typed_example() -> Result<()> {
     // Parse the string of data into a Person object. This is exactly the
     // same function as the one that produced serde_json::Value above, but
     // now we are asking it for a Person as output.
-    let p: NamedScene = serde_json::from_str(data)?;
+    let scenes: Vec<NamedScene> = serde_json::from_str(data)?;
 
-    // Do things just like with any other Rust data structure.
-    println!("{}: Do you want to come along? {}", p.scene_name, p.scene.name);
+    let mut scene_map: HashMap<String,Scene> = HashMap::new();
+    
+    scenes.iter().for_each(|s| {
+      scene_map.insert(s.scene_name.clone(), s.scene.clone());
 
-    Ok(())
+    });
+    
+
+    Ok((scene_map))
 }
 
-fn main() {
-	typed_example().unwrap();
-}
