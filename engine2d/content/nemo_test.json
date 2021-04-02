@@ -1,0 +1,668 @@
+{
+    "game name": "Nemo: The After-Story",
+	"scenes" : [
+    {
+        "scene_name": "intro",
+        "scene": {
+            "name": "Nemo",
+            "message": "Hi! My name is Nemo. You all may know me from the rather popular Disney Pixar movie Finding Nemo. It's a little story about how my dad goes looking for me in the Great Barrier Reef when I was just a wee little clown fish. TL;DR is I wanted to go out exploring the great unknown because my dad, Marlin, was kinda an overprotective clown fish (mom died when I was just an egg). So I did what every angsty 6-year-old would do. Swim off by myself and explore the mysterious reef! I met so many cool people on my journey, but was honestly super happy my dad found me. Now I'm 16 years old, all grown up, and ready for my next adventure! Dad isn't as protective anymore, but he still wants me to be safe. Help me find the great treasure of the barrier reef! (I heard it gives you superpowers)...",
+            "response_message": "So will you help me?",
+            "responses": [
+                {
+                    "response": "Yes",
+                    "goto": "ending1"
+                },
+                {
+                    "response": "No",
+                    "goto": "startadventure"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "ending1",
+        "scene": {
+            "name": "Nemo",
+            "message": "Awwww, sorry to hear that. If you ever want to come back and lend me a hand *waves small fin* just holler!",
+            "response_message": "END GAME.",
+            "responses": []
+        }
+    },
+
+    {
+        "scene_name": "startadventure",
+        "scene": {
+            "name": "Nemo",
+            "message": "Oh yes! I'm so excited for you to help me out on this new adventure! If we find the treasure, I promise you can have half of it! Let's go!",
+            "response_message": "--Leaving Home--",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "meetmarlin"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "meetmarlin",
+        "scene": {
+            "name": "Marlin",
+            "message": "Son! Son! Hey! Hey you, have you seen my son? He's a small little clown fish with an extra tiny right fin. He looks like this. Yay high and yay wide. I haven't seen this little rascal all day...",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "No",
+                    "goto": "marlinfear"
+                },
+                {
+                    "response": "Yes",
+                    "goto": "marlinjoy"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "marlinfear",
+        "scene": {
+            "name": "Marlin",
+            "message": "You haven't? Nemo! Nemo! Where are you? Are you sure you haven't seen a little clown fish? That little rascal...",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "Yes",
+                    "goto": "nemomarlin1"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "marlinjoy",
+        "scene": {
+            "name": "Marlin",
+            "message": "Oh you have! Where is he?",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "He's, uhhhh,",
+                    "goto": "nemomarlin1"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "nemomarlin1",
+        "scene": {
+            "name": "Nemo",
+            "message": "Dad. Dad. I'm right here. I was packing up some last-minute items that might help us along the way. Hey (user), here are three different items for the trip along the way. Here's a Spoon, Magnifying Glass, and Shark Tooth.",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "nemomarlin2"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "nemomarlin2",
+        "scene": {
+            "name": "Marlin",
+            "message": "Along the way? Where do you think you're going young man?",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "nemomarlin3"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "nemomarlin3",
+        "scene": {
+            "name": "Nemo",
+            "message": "Dad, you promised me that I could go on an adventure once I turned 16. I'm not even going alone, I'm taking (User) with me! They know all about the reef, so don't even sweat it!",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "nemomarlin4"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "nemomarlin4",
+        "scene": {
+            "name": "Marlin",
+            "message": "Fish can't sweat son. *Sighs* I guess you are a little big clown fish now. How long will you be gone for? Do you know how to find anemone to sleep in?",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "nemomarlin5"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "nemomarlin5",
+        "scene": {
+            "name": "Nemo",
+            "message": "Dad... Dad... Don't worry. I'm serious.",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "nemomarlin6"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "nemomarlin6",
+        "scene": {
+            "name": "Marlin",
+            "message": "*Deep Breath* You're right son. Be safe. If you see Crush and Squirt, let them know I said hello alright? They should be able to help you find the correct current to wherever you want to go.",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "nemomarlin7"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "nemomarlin7",
+        "scene": {
+            "name": "Nemo",
+            "message": "Thanks Dad. Love you.",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "nemomarlin8"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "nemomarlin8",
+        "scene": {
+            "name": "Marlin",
+            "message": "I love you too son.",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "choosedirection"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "choosedirection",
+        "scene": {
+            "name": "Nemo",
+            "message": "And we're off! Which way should we swim first? We could go ask Aunty Dory up North, go find Uncle Crush and Cousin Squirt West, or Uncle Bruce South-East.",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "North",
+                    "goto": "gonorth"
+                },
+                {
+                    "response": "West",
+                    "goto": "gowest"
+                },
+                {
+                    "response": "Southeast",
+                    "goto": ""
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "gonorth",
+        "scene": {
+            "name": "Nemo",
+            "message": "To Aunty Dory's it is! She should be able to give us a better idea and maybe even a map towards the treasure. She always knows the secrets of the reef!",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "meetdory"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "meetdory",
+        "scene": {
+            "name": "Dory",
+            "message": "So you wanna find this treasure ya say? It gives you super powers ya say?",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "dorynemo1"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "dorynemo1",
+        "scene": {
+            "name": "Nemo",
+            "message": "Yes yes!",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "dorynemo2"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "dorynemo2",
+        "scene": {
+            "name": "Dory",
+            "message": "I know EXACTLY what you're talking about.",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "dorynemo3"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "dorynemo3",
+        "scene": {
+            "name": "Dory",
+            "message": "...",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "dorynemo4"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "dorynemo4",
+        "scene": {
+            "name": "Dory",
+            "message": "So what did you need again?",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "dorynemo5"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "dorynemo5",
+        "scene": {
+            "name": "Nemo",
+            "message": "Oh no, her short term memory loss... Remind her what we're here for (User).",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "treasure!",
+                    "goto": "dorytreasure1"
+                },
+                {
+                    "response": "anything else",
+                    "goto": "dorynottreasure1"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "dorynottreasure1",
+        "scene": {
+            "name": "Dory",
+            "message": "\"Anything Else\". That reminds me, when I was going on that marvelous adventure with your pops Nemo... \"Anything Else\". You know, when I was a young blue tang... I must say Nemo, I know nothing at all about \"Anything Else\".",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "dorynottreasure2"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "dorynottreasure2",
+        "scene": {
+            "name": "Nemo",
+            "message": "She's getting sidetracked! C'mon (User), tell her what we're really here for!",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "dorytreasure!!",
+                    "goto": "dorytreasure1"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "dorytreasure1",
+        "scene": {
+            "name": "Dory",
+            "message": "A treasure? I don't know about a treasure, but here's a box, Nemo and friend! I picked this up when I was on my way to P. Sherman 42 Wallaby Way Sydney. I found it on some sunken pirate ship. Argh!",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "dorytreasure2"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "dorytreasure2",
+        "scene": {
+            "name": "Nemo",
+            "message": "Thanks Aunty Dory! This box probably has a treasure map in it. Let's go (User), let's figure out how to open the box and get to our treasure!",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "ark2"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "gowest",
+        "scene": {
+            "name": "Nemo",
+            "message": "Uncle Crush? Sounds radical. Hopefully he's not riding the current away right now.",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "meetsquirt"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "meetsquirt",
+        "scene": {
+            "name": "Squirt",
+            "message": "Woahhh Nemo? Is that you?",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "nemosquirt1"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "nemosquirt1",
+        "scene": {
+            "name": "Nemo",
+            "message": "Squirt?",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "nemosquirt2"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "nemosquirt2",
+        "scene": {
+            "name": "Squirt",
+            "message": "Christ Nemo, I almost didn't recognize you!",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "nemosquirt3"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "nemosquirt3",
+        "scene": {
+            "name": "Nemo",
+            "message": "Squirt. I DIDN'T recognize you. Is Uncle Crush home?",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "nemosquirt4"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "nemosquirt4",
+        "scene": {
+            "name": "Squirt",
+            "message": "Yea he's just chillin by the anemone. Yo Dad! Someone's here to see you.",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "meetcrush"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "meetcrush",
+        "scene": {
+            "name": "Crush",
+            "message": "Neeeeeeeeeemoooo. And frieeeeeeeeendddddd. Howzit in the dowzits?",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "crush1"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "crush1",
+        "scene": {
+            "name": "Nemo",
+            "message": "Uncle Crush, we're here to ask you about a secret treasure in the reef? One that gives you super powers?",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "crush2"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "crush2",
+        "scene": {
+            "name": "Crush",
+            "message": "Super powers? When you get to be my age you'll understand that waves, vibes, and flowage are the only real super powers~ but ask away, kiddo.",
+            "response_message": "What d'you wanna know?",
+            "responses": [
+                {
+                    "response": "do you have a map?",
+                    "goto": "crushtreasure1"
+                },
+                {
+                    "response": "what's the secret to riding currents?",
+                    "goto": "ridecurrents"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "ridecurrents",
+        "scene": {
+            "name": "Crush",
+            "message": "The secret to riding currents? Hehe, I can't tell you that, you gotta ~feel~ what the ocean tells you. My little fish-kin, ask for something more useful that can guide you to the treasures unknown.",
+            "response_message": "What d'you want to know?",
+            "responses": [
+                {
+                    "response": "do you have a map?",
+                    "goto": "crushtreasure1"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "crushtreasure1",
+        "scene": {
+            "name": "Crush",
+            "message": "A map you say? I could maybe source you a map… Squirt bring me my",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "crushtreasure2"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "crushtreasure2",
+        "scene": {
+            "name": "Squirt",
+            "message": "*Brings Box*",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "crushtreasure3"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "crushtreasure3",
+        "scene": {
+            "name": "Crush",
+            "message": "I found this box when I was riding the wild ocean currents of the deep reef. We were passing some sunken pirate ship and this box was just vibin at the bow of the ship. Oh yeah. This is the one.",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "crushtreasure4"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "crushtreasure5",
+        "scene": {
+            "name": "Nemo",
+            "message": "Thanks Uncle Crush! Hey (User), what does it say on the box? Is the map inside? Let's figure out how to open it!",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "crushtreasure6"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "crushtreasure6",
+        "scene": {
+            "name": "Crush",
+            "message": "Good luck, kiddos...",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "crushtreasure7"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "crushtreasure7",
+        "scene": {
+            "name": "Squirt",
+            "message": "Bye cousin Nemo and friend!",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": "ark2"
+                }
+            ]
+        }
+    },
+
+    {
+        "scene_name": "",
+        "scene": {
+            "name": "",
+            "message": "",
+            "response_message": "",
+            "responses": [
+                {
+                    "response": "",
+                    "goto": ""
+                }
+            ]
+        }
+    }
+    ]
+}

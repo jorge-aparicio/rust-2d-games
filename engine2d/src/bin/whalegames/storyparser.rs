@@ -4,6 +4,13 @@ use std::collections::HashMap;
 
 
 #[derive(Serialize, Deserialize)]
+pub struct Story {
+    pub story_name: String,
+    pub scenes: Vec<NamedScene>,
+}
+
+
+#[derive(Serialize, Deserialize)]
 pub struct NamedScene {
     pub scene_name: String,
     pub scene: Scene,

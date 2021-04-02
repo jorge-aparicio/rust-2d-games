@@ -13,7 +13,7 @@ use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper; //, PlayError};
 use std::collections::HashMap;
 
-mod responsetree;
+
 mod storyparser;
 use crate::text::DrawTextExt;
 use engine2d::{objects::*, screen, text, texture};
@@ -38,7 +38,7 @@ enum Mode {
     EndGame,
 }
 
-use responsetree::*;
+
 use storyparser::*;
 struct GameState {
     scene_map: HashMap<String, Scene>,
@@ -159,7 +159,7 @@ fn main() {
     let window = {
         let size = LogicalSize::new(WIDTH as f64, HEIGHT as f64);
         WindowBuilder::new()
-            .with_title("flappy bird")
+            .with_title("finding nemo: the after story")
             .with_inner_size(size)
             .with_min_inner_size(size)
             .with_resizable(false)
@@ -314,6 +314,27 @@ fn main() {
                     screen.rect(text_box, BOX_COLOR);
                     screen.rect_lines(text_box, [0, 0, 0, 0]);
 
+                    // render text in box as many characters that will fit per line for now
+                    let mut end_line_index: usize;
+                    let mut start_line_index: usize = 0;
+                    let mut respmess_numlines = 0;
+                    for i in 1..(BOX_HEIGHT / (CHAR_SIZE + 1.0)) as usize {
+                        end_line_index = cmp::min(
+                            start_line_index + ((BOX_WIDTH / CHAR_SIZE) - 1.0) as usize,
+                            state.current_scene.response_message.len(),
+                        );
+                        screen.draw_text_at_pos(
+                            state
+                                .current_scene
+                                .response_message
+                                .substring(start_line_index, end_line_index),
+                            Vec2::new(BOX_X + 10.0, BOX_Y + ((CHAR_SIZE) * i as f32)),
+                            &state.text_info,
+                        );
+                        start_line_index = end_line_index;
+                        respmess_numlines+= 1;
+                    }
+
                     // vec of response y values for pointer to know location
                     let mut ypos_vec: Vec<(f32, f32)> = vec![];
 
@@ -323,7 +344,7 @@ fn main() {
                         let mut end_line_index: usize;
                         let mut start_line_index: usize = 0;
 
-                        for j in 1..(BOX_HEIGHT / (CHAR_SIZE)) as usize {
+                        for j in (1 + respmess_numlines)..(BOX_HEIGHT / (CHAR_SIZE)) as usize {
                             end_line_index = cmp::min(
                                 start_line_index
                                     + (((BOX_WIDTH - 3.0 * BOX_WIDTH / 64.0) / CHAR_SIZE) - 1.0)
