@@ -2,7 +2,7 @@ use engine2d::objects::Rect;
 
 use crate::CHAR_SIZE;
 
-pub fn info() -> [(char, Rect); 66] {
+pub fn info() -> [(char, Rect); 71] {
     [
         (' ', Rect::new(0.0, 0.0, CHAR_SIZE, CHAR_SIZE)),
         ('!', Rect::new(16.0, 0.0, CHAR_SIZE, CHAR_SIZE)),
@@ -70,5 +70,10 @@ pub fn info() -> [(char, Rect); 66] {
         ('8', Rect::new(128.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
         ('9', Rect::new(144.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
         ('-', Rect::new(208.0, 0.0, CHAR_SIZE, CHAR_SIZE)),
+        ('.', Rect::new(224.0, 0.0, CHAR_SIZE, CHAR_SIZE)),
+        (',', Rect::new(192.0, 0.0, CHAR_SIZE, CHAR_SIZE)),
+        ('\'', Rect::new(112.0, 0.0, CHAR_SIZE, CHAR_SIZE)),
+        ('?', Rect::new(240.0, 16.0, CHAR_SIZE, CHAR_SIZE)),
+        ('*', Rect::new(160.0, 0.0, CHAR_SIZE, CHAR_SIZE)),
     ]
 }

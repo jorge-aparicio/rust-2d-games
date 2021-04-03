@@ -1,31 +1,26 @@
-#![allow(unused)]
-use std::cmp;
-use std::fs::File;
-use std::io::BufReader;
 use std::collections::HashMap;
 use std::rc::Rc;
 
 use pixels::{Pixels, SurfaceTexture};
+#[allow(unused)]
 use rodio::Source;
 use winit::dpi::LogicalSize;
 use winit::event::{Event, VirtualKeyCode};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::WindowBuilder;
 use winit_input_helper::WinitInputHelper; //, PlayError};
-use substring::Substring;
 
 use engine2d::{
+    animation::{Animation, AnimationData},
     objects::*,
     screen::Screen,
     sprite::{DrawSpriteExt, Sprite},
     text::*,
     texture::Texture,
-    animation::{Animation, AnimationData}
 };
 
 mod storyparser;
 
-const DT: f64 = 1.0 / 60.0;
 const WIDTH: usize = 1280;
 const HEIGHT: usize = 720;
 const DEPTH: usize = 4;
@@ -44,7 +39,6 @@ enum Mode {
     EndGame,
 }
 
-
 use storyparser::*;
 struct GameState {
     scene_map: HashMap<String, Scene>,
@@ -58,54 +52,65 @@ struct GameState {
 }
 
 impl GameState {
-    pub fn reset_read_info(&mut self){
+    pub fn reset_read_info(&mut self) {
         self.message_index = 0;
         self.box_text_index = 0;
         self.response_index = 0;
         self.box_read = false;
     }
 
-    pub fn reset_game(&mut self){
+    pub fn reset_game(&mut self) {
         self.reset_read_info();
-        self.current_scene =  self.scene_map.get("intro").unwrap().clone();
+        self.current_scene = self.scene_map.get("intro").unwrap().clone();
         self.mode = Mode::Title;
-
     }
 }
 
 mod textinfo;
 
 fn main() {
-    let text_box: Rect = Rect::new(BOX_X, BOX_Y, BOX_WIDTH, BOX_HEIGHT);
+    let text_box = Rect::new(BOX_X, BOX_Y, BOX_WIDTH, BOX_HEIGHT);
+    let text_box_text = Rect::new(
+        BOX_X + 3.0 * BOX_WIDTH / 64.0,
+        BOX_Y + CHAR_SIZE * 4.0,
+        BOX_WIDTH - 6.0 * BOX_WIDTH / 64.0,
+        BOX_HEIGHT - CHAR_SIZE * 6.0,
+    );
 
     let story = parse_story().unwrap();
     let title = story.story_name.clone();
-    let mut scene_map: HashMap<String,Scene> = HashMap::new();
+    let mut scene_map: HashMap<String, Scene> = HashMap::new();
     let mut sprites: HashMap<String, Sprite> = HashMap::new();
     use std::path::Path;
     story.scenes.iter().for_each(|s| {
         scene_map.insert(s.scene_name.clone(), s.scene.clone());
-        if s.scene.name != "" {
-            if let Ok(texture) = Texture::with_file(Path::new(&format!("content/fishsprites/{}.png", s.scene.name.to_lowercase()))) {
+        if !s.scene.name.is_empty() {
+            if let Ok(texture) = Texture::with_file(Path::new(&format!(
+                "content/fishsprites/{}.png",
+                s.scene.name.to_lowercase()
+            ))) {
                 let width = texture.width as f32;
                 let height = texture.height as f32;
                 let animation = Animation::new(&Rc::new(AnimationData {
                     frames: vec![(Rect::new(0.0, 0.0, width, height), 1)],
                     looping: false,
                 }));
-                sprites.insert(s.scene.name.clone(), Sprite::new(
-                    &Rc::new(texture),
-                    animation,
-                    Vec2::new((WIDTH as f32 - width) / 2.0, 200.0 - height)
-                ));
+                sprites.insert(
+                    s.scene.name.clone(),
+                    Sprite::new(
+                        &Rc::new(texture),
+                        animation,
+                        Vec2::new((WIDTH as f32 - width) / 2.0, 200.0 - height),
+                    ),
+                );
             }
         }
-   });
+    });
 
     let current_scene = scene_map.get("intro").unwrap();
     let mut state = GameState {
         // add tree struct that will represent game text and options. empty until text parser implemented
-        scene_map : scene_map.clone(),
+        scene_map: scene_map.clone(),
         current_scene: current_scene.clone(),
         box_read: false,
         message_index: 0,
@@ -115,10 +120,7 @@ fn main() {
         //ending_score: 0,
         // ending determiner
         text_info: {
-            use std::path::Path;
-            let image = Rc::new(Texture::with_file(Path::new(
-                "content/ascii-dark.png",
-            )).unwrap());
+            let image = Rc::new(Texture::with_file(Path::new("content/ascii-dark.png")).unwrap());
             TextInfo::new(&image, &textinfo::info())
         },
         mode: Mode::Title,
@@ -154,7 +156,7 @@ fn main() {
     let window = {
         let size = LogicalSize::new(WIDTH as f64, HEIGHT as f64);
         WindowBuilder::new()
-            .with_title("Finding Nemo: The After Story")
+            .with_title(&title)
             .with_inner_size(size)
             .with_min_inner_size(size)
             .with_resizable(false)
@@ -173,13 +175,9 @@ fn main() {
                 // Draw the current frame
                 if let Event::RedrawRequested(_) = event {
                     let mut screen = Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH);
-                    screen.clear([135, 206, 250, 150]);
+                    screen.clear([100, 150, 200, 255]);
 
-                    screen.draw_text_at_pos(
-                        "Finding Nemo: The After Story",
-                        Vec2::new(500.0, 160.0),
-                        &state.text_info,
-                    );
+                    screen.draw_text_at_pos(&title, Vec2::new(500.0, 100.0), &state.text_info);
                     screen.draw_text_at_pos(
                         "press enter to start.",
                         Vec2::new(460.0, 440.0),
@@ -203,7 +201,7 @@ fn main() {
                     }
                     if input_events.key_pressed(VirtualKeyCode::Return) {
                         state.mode = Mode::Read;
-                        //return;
+                        window.request_redraw();
                     }
 
                     // Resize the window
@@ -214,11 +212,9 @@ fn main() {
             }
             Mode::Read => {
                 // Draw the current frame
-                let mut end_line_index: usize;
-                let mut start_line_index: usize = state.box_text_index;
                 if let Event::RedrawRequested(_) = event {
                     let mut screen = Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH);
-                    screen.clear([135, 206, 250, 150]);
+                    screen.clear([100, 150, 200, 255]);
 
                     //render text box
                     screen.rect(text_box, BOX_COLOR);
@@ -229,31 +225,30 @@ fn main() {
                         screen.draw_sprite(sprite);
                     }
 
-                    // render text in box as many characters that will fit per line for now
-                    for i in 1..(BOX_HEIGHT / (CHAR_SIZE + 1.0)) as usize {
-                        end_line_index = cmp::min(
-                            start_line_index + ((BOX_WIDTH / CHAR_SIZE) - 1.0) as usize,
-                            state.current_scene.message.len(),
-                        );
+                    // render text in box
+                    if !state.current_scene.name.is_empty() {
                         screen.draw_text_at_pos(
-                            state
-                                .current_scene
-                                .message
-                                .substring(start_line_index, end_line_index),
-                            Vec2::new(BOX_X + 10.0, BOX_Y + ((CHAR_SIZE) * i as f32)),
+                            &state.current_scene.name,
+                            Vec2::new(text_box_text.x, BOX_Y + CHAR_SIZE * 2.0),
                             &state.text_info,
                         );
-                        start_line_index = end_line_index;
                     }
-                    state.message_index = start_line_index;
+                    if let Some(idx) = screen.draw_text_in_rect(
+                        &state.current_scene.message[state.box_text_index..],
+                        text_box_text,
+                        &state.text_info,
+                        false,
+                    ) {
+                        state.message_index = idx;
+                    } else {
+                        state.message_index = state.current_scene.message.len();
+                    }
 
-                    //println!(" start index: {}",start_line_index);
                     if pixels.render().is_err() {
                         *control_flow = ControlFlow::Exit;
                         return;
                     }
                 }
-
 
                 // Handle input_events events
                 if input_events.update(&event) {
@@ -266,13 +261,10 @@ fn main() {
 
                     if input_events.key_pressed(VirtualKeyCode::Space) || input_events.quit() {
                         state.box_text_index = state.message_index;
-                        if state.current_scene.responses.len() > 0 && state.current_scene.responses[0].response != ""  {
+                        if !state.current_scene.responses.is_empty()
+                            && !state.current_scene.responses[0].response.is_empty()
+                        {
                             // if player has read all text and has option to give response switch to response mode
-                            println!(
-                                " responses not empty, start index: {}, message length: {}",
-                                start_line_index,
-                                state.current_scene.message.len()
-                            );
                             if state.message_index >= state.current_scene.message.len() - 1 {
                                 state.mode = Mode::Respond;
                                 state.box_read = false;
@@ -285,13 +277,16 @@ fn main() {
                                 state.mode = Mode::EndGame;
                             } else {
                                 // if no response option available go forward in story
-                                state.current_scene = state.scene_map.get(&*(state.current_scene.responses[0].goto)).unwrap().clone();
+                                state.current_scene = state
+                                    .scene_map
+                                    .get(&*(state.current_scene.responses[0].goto))
+                                    .unwrap()
+                                    .clone();
                                 state.reset_read_info();
-
                             }
                         }
 
-                        return;
+                        window.request_redraw();
                     }
 
                     // Resize the window
@@ -307,61 +302,41 @@ fn main() {
                 if let Event::RedrawRequested(_) = event {
                     let mut screen = Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH);
                     // render background
-                    screen.clear([135, 206, 250, 150]);
+                    screen.clear([100, 150, 200, 255]);
 
                     //render text box
                     screen.rect(text_box, BOX_COLOR);
-                    screen.rect_lines(text_box, [0, 0, 0, 0]);
-
-                    
+                    screen.rect_lines(text_box, [0, 0, 0, 255]);
 
                     // vec of response y values for pointer to know location
-                    let mut ypos_vec: Vec<(f32, f32)> = vec![];
+                    let mut ypos_vec: Vec<f32> = vec![BOX_Y + CHAR_SIZE];
 
-                    //render responses
+                    // render responses
                     for (i, resp_map) in state.current_scene.responses.iter().enumerate() {
-                        // render text in box as many characters that will fit per line for now
-                        let mut end_line_index: usize;
-                        let mut start_line_index: usize = 0;
+                        let cur_rect = Rect::new(
+                            BOX_X + 3.0 * BOX_WIDTH / 64.0,
+                            ypos_vec[i],
+                            BOX_WIDTH - 6.0 * BOX_WIDTH / 64.0,
+                            BOX_HEIGHT,
+                        );
 
-                        for j in 1 ..(BOX_HEIGHT / (CHAR_SIZE)) as usize {
-                            end_line_index = cmp::min(
-                                start_line_index
-                                    + (((BOX_WIDTH - 3.0 * BOX_WIDTH / 64.0) / CHAR_SIZE) - 1.0)
-                                        as usize,
-                                resp_map.response.len(),
-                            );
-                            screen.draw_text_at_pos(
-                                resp_map.response.substring(start_line_index, end_line_index),
-                                Vec2::new(
-                                    BOX_X + 3.0 * BOX_WIDTH / 64.0,
-                                    BOX_Y + ((CHAR_SIZE * 2.0) * i as f32) + (CHAR_SIZE * j as f32),
-                                ),
-                                &state.text_info,
-                            );
-                            start_line_index = end_line_index;
-                        }
-                        ypos_vec.push((
-                            BOX_Y + ((CHAR_SIZE * 2.0) * i as f32),
-                            (resp_map.response.len() as f32
-                                / (((BOX_WIDTH - 3.0 * BOX_WIDTH / 64.0) / CHAR_SIZE) - 1.0)),
-                        ));
+                        screen.draw_text_in_rect(
+                            &resp_map.response,
+                            cur_rect,
+                            &state.text_info,
+                            false,
+                        );
+                        ypos_vec.push(cur_rect.y + CHAR_SIZE * 2.0);
                     }
 
                     // response pointer
                     let pointer = Rect {
                         x: BOX_X + 1.0 * BOX_WIDTH / 64.0,
-                        y: {
-                            let (init_y, i) = ypos_vec[state.response_index];
-                            println!("{}", i);
-                            init_y + (i) * CHAR_SIZE
-                        },
+                        y: ypos_vec[state.response_index],
                         h: 8.0,
                         w: 8.0,
                     };
                     screen.rect(pointer, [255, 0, 0, 255]);
-
-                    //TODO  character, character name?
 
                     if pixels.render().is_err() {
                         *control_flow = ControlFlow::Exit;
@@ -371,7 +346,7 @@ fn main() {
 
                 //TODO update position in tree
 
-                // wait for player input
+                let mut input = false;
 
                 // Handle input_events events
                 if input_events.update(&event) {
@@ -381,36 +356,42 @@ fn main() {
                         return;
                     }
 
-                    if input_events.key_pressed(VirtualKeyCode::Down) || input_events.quit() {
-                        //TODO change response option
+                    if input_events.key_pressed(VirtualKeyCode::Down) {
                         if state.response_index < state.current_scene.responses.len() - 1 {
                             state.response_index += 1;
                         } else {
                             state.response_index = 0;
                         }
-                        return;
+                        input = true;
                     }
 
-                    if input_events.key_pressed(VirtualKeyCode::Up) || input_events.quit() {
+                    if input_events.key_pressed(VirtualKeyCode::Up) {
                         if state.response_index > 0 {
                             state.response_index -= 1;
                         } else {
                             state.response_index = state.current_scene.responses.len() - 1;
                         }
-                        return;
+                        input = true;
                     }
 
-                    if input_events.key_pressed(VirtualKeyCode::Space) || input_events.quit() {
+                    if input_events.key_pressed(VirtualKeyCode::Space) {
                         //move to next value in tree based on response.
                         if state.current_scene.responses.is_empty() {
                             state.mode = Mode::EndGame;
                         } else {
-                            state.current_scene = state.scene_map.get(&*(state.current_scene.responses[0].goto)).unwrap().clone();
+                            state.current_scene = state
+                                .scene_map
+                                .get(&*(state.current_scene.responses[state.response_index].goto))
+                                .unwrap()
+                                .clone();
                             state.reset_read_info();
                             state.mode = Mode::Read;
                         }
+                        input = true;
+                    }
 
-                        return;
+                    if input {
+                        window.request_redraw();
                     }
 
                     // Resize the window
@@ -423,7 +404,7 @@ fn main() {
             Mode::EndGame => {
                 if let Event::RedrawRequested(_) = event {
                     let mut screen = Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH);
-                    screen.clear([200, 0, 0, 150]);
+                    screen.clear([100, 150, 200, 255]);
 
                     screen.draw_text_at_pos("the end", Vec2::new(400.0, 60.0), &state.text_info);
 
@@ -452,7 +433,7 @@ fn main() {
                     if input_events.key_pressed(VirtualKeyCode::Return) {
                         // reset game mode to title, state values to default
                         state.reset_game();
-                        //return;
+                        window.request_redraw();
                     }
                     // Resize the window
                     if let Some(size) = input_events.window_resized() {
@@ -461,6 +442,5 @@ fn main() {
                 }
             }
         }
-        window.request_redraw();
     });
 }
