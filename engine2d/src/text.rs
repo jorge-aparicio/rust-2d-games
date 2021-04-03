@@ -62,7 +62,7 @@ impl<'fb> DrawTextExt for Screen<'fb> {
     }
 
     // assumes using a font with same height characters
-    // option is the amount cut off
+    // option is idx in string of cutoff (like message_index in nemo)
     fn draw_text_in_rect(
         &mut self,
         string: &str,
