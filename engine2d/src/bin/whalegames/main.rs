@@ -85,19 +85,21 @@ fn main() {
     use std::path::Path;
     story.scenes.iter().for_each(|s| {
         scene_map.insert(s.scene_name.clone(), s.scene.clone());
-        let texture = Texture::with_file(Path::new(&format!("content/fishsprites/{}.png", s.scene.name)));
-        let width = texture.width as f32;
-        let height = texture.height as f32;
-        let animation = Animation::new(&Rc::new(AnimationData {
-            frames: vec![(Rect::new(0.0, 0.0, width, height), 1)],
-            looping: false,
-        }));
-        sprites.insert(s.scene.name.clone(), Sprite::new(
-            &Rc::new(texture),
-            animation,
-            Vec2::new((WIDTH as f32 - width) / 2.0, 200.0 - height)
-        ));
-
+        if s.scene.name != "" {
+            if let Ok(texture) = Texture::with_file(Path::new(&format!("content/fishsprites/{}.png", s.scene.name.to_lowercase()))) {
+                let width = texture.width as f32;
+                let height = texture.height as f32;
+                let animation = Animation::new(&Rc::new(AnimationData {
+                    frames: vec![(Rect::new(0.0, 0.0, width, height), 1)],
+                    looping: false,
+                }));
+                sprites.insert(s.scene.name.clone(), Sprite::new(
+                    &Rc::new(texture),
+                    animation,
+                    Vec2::new((WIDTH as f32 - width) / 2.0, 200.0 - height)
+                ));
+            }
+        }
    });
 
     let current_scene = scene_map.get("intro").unwrap();
@@ -116,7 +118,7 @@ fn main() {
             use std::path::Path;
             let image = Rc::new(Texture::with_file(Path::new(
                 "content/ascii-dark.png",
-            )));
+            )).unwrap());
             TextInfo::new(&image, &textinfo::info())
         },
         mode: Mode::Title,

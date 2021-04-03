@@ -538,11 +538,11 @@ impl Resources {
                 }),
             ],
             textures: vec![
-                Rc::new(Texture::with_file(Path::new("content/pigeon.png"))),
-                Rc::new(Texture::with_file(Path::new("content/buildings.png"))),
+                Rc::new(Texture::with_file(Path::new("content/pigeon.png")).unwrap()),
+                Rc::new(Texture::with_file(Path::new("content/buildings.png")).unwrap()),
             ],
             text_info: {
-                let image = Rc::new(Texture::with_file(Path::new("content/ascii-dark.png")));
+                let image = Rc::new(Texture::with_file(Path::new("content/ascii-dark.png")).unwrap());
                 let info = [
                     (' ', Rect::new(0.0, 0.0, CHAR_SIZE, CHAR_SIZE)),
                     ('!', Rect::new(16.0, 0.0, CHAR_SIZE, CHAR_SIZE)),

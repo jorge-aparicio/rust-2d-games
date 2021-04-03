@@ -16,8 +16,8 @@ enum AlphaChannel {
 }
 
 impl Texture {
-    pub fn with_file(path: &Path) -> Self {
-        Self::new(image::open(path).expect("Couldn't load image").into_rgba8())
+    pub fn with_file(path: &Path) -> Result<Self, image::error::ImageError> {
+        Ok(Self::new(image::open(path)?.into_rgba8()))
     }
     pub fn new(image: RgbaImage) -> Self {
         let (width, height) = image.dimensions();
