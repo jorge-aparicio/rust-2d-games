@@ -1,5 +1,5 @@
 {
-    "game name": "Nemo: The After-Story",
+    "story_name": "Nemo: The After-Story",
 	"scenes" : [
     {
         "scene_name": "intro",
@@ -10,11 +10,11 @@
             "responses": [
                 {
                     "response": "Yes",
-                    "goto": "ending1"
+                    "goto": "startadventure"
                 },
                 {
                     "response": "No",
-                    "goto": "startadventure"
+                    "goto": "ending1"
                 }
             ]
         }
