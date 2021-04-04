@@ -22,7 +22,7 @@ pub struct Scene {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Response {
-    pub response: String, // ?????
+    pub response: String,
     pub goto: String,
 }
 

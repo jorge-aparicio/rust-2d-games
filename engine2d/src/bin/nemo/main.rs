@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 use std::rc::Rc;
 
+
 use pixels::{Pixels, SurfaceTexture};
 #[allow(unused)]
 use rodio::Source;
+use std::fs::File;
+use std::io::BufReader;
 use winit::dpi::LogicalSize;
 use winit::event::{Event, VirtualKeyCode};
 use winit::event_loop::{ControlFlow, EventLoop};
@@ -126,29 +129,14 @@ fn main() {
         mode: Mode::Title,
     };
 
-    let (_stream, _stream_handle) = rodio::OutputStream::try_default().unwrap();
+    let (_stream, stream_handle) = rodio::OutputStream::try_default().unwrap();
 
-    /* let file1 = File::open("content/birdcoo.mp3").unwrap();
-    let file2 = File::open("content/birdflap.mp3").unwrap();
-    let file3 = File::open("content/city-quiet.mp3").unwrap();
-    let source1 = rodio::Decoder::new(BufReader::new(file1)).unwrap();
-    let source2 = rodio::Decoder::new(BufReader::new(file2)).unwrap();
-    let source3 = rodio::Decoder::new(BufReader::new(file3)).unwrap();
-
-    let _source1 = source1
-        .take_duration(Duration::from_secs(9))
-        .repeat_infinite();
-    let _source2 = source2
-        .take_duration(Duration::from_secs(4))
-        .repeat_infinite();
-    let _source3 = source3
-        .take_duration(Duration::from_secs(31))
+    let file = File::open("content/the-fish-who-dreamt-of-a-distant-planet.mp3").unwrap();
+    let background = rodio::Decoder::new(BufReader::new(file))
+        .unwrap()  
         .repeat_infinite();
 
-    // let _ = stream_handle.play_raw(_source1.convert_samples());
-    // let _ = stream_handle.play_raw(_source2.convert_samples());
-    // let _ = stream_handle.play_raw(_source3.convert_samples());
-    */
+    let _ = stream_handle.play_raw(background.convert_samples());
 
     let event_loop = EventLoop::new();
     let mut input_events = WinitInputHelper::new();
@@ -175,9 +163,9 @@ fn main() {
                 // Draw the current frame
                 if let Event::RedrawRequested(_) = event {
                     let mut screen = Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH);
-                    screen.clear([100, 150, 200, 255]);
+                    screen.clear([0, 105, 148, 255]);
 
-                    screen.draw_text_at_pos(&title, Vec2::new(500.0, 100.0), &state.text_info);
+                    screen.draw_text_at_pos(&title, Vec2::new(450.0, 100.0), &state.text_info);
                     screen.draw_text_at_pos(
                         "press enter to start.",
                         Vec2::new(460.0, 440.0),
@@ -214,7 +202,7 @@ fn main() {
                 // Draw the current frame
                 if let Event::RedrawRequested(_) = event {
                     let mut screen = Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH);
-                    screen.clear([100, 150, 200, 255]);
+                    screen.clear([0, 105, 148, 255]);
 
                     //render text box
                     screen.rect(text_box, BOX_COLOR);
@@ -302,7 +290,7 @@ fn main() {
                 if let Event::RedrawRequested(_) = event {
                     let mut screen = Screen::wrap(pixels.get_frame(), WIDTH, HEIGHT, DEPTH);
                     // render background
-                    screen.clear([100, 150, 200, 255]);
+                    screen.clear([0, 105, 148, 255]);
 
                     //render text box
                     screen.rect(text_box, BOX_COLOR);
